@@ -6,8 +6,8 @@ from starlette.status import HTTP_403_FORBIDDEN, HTTP_401_UNAUTHORIZED
 
 from app.core.settings import settings 
 
-from app.models.user import User 
-from app.models.role import Role  
+from app.models.user_setup.user import User 
+from app.models.user_setup.role import Role  
 
 
 bearer_scheme = HTTPBearer()
@@ -25,15 +25,6 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(b
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired token",
         )
-# def require_roles(*allowed_roles: str):
-#     async def wrapper(user=Depends(get_current_user)):
-#         if user.role not in allowed_roles:
-#             raise HTTPException(
-#                 status_code=status.HTTP_403_FORBIDDEN,
-#                 detail="Not authorized"
-#             )
-#         return user
-#     return wrapper
 
 def require_roles(*allowed_roles: str):
     async def wrapper(user=Depends(get_current_user)):

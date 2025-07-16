@@ -1,22 +1,17 @@
-from beanie import Document
+from beanie import Document, PydanticObjectId
 from pydantic import Field, field_validator
-from datetime import datetime, timezone
 from typing import Optional
 from pymongo import ASCENDING, DESCENDING
-from enum import Enum
+from app.constants.warehouse_enum import WarehouseType
+from app.models.base import TimeStampMixin
 
-class WarehouseType(str, Enum):
-    BRANCH = "branch"
-    USER = "user"
-    VIRTUAL = "virtual"
-    VENDOR = "vendor"
 
-class Warehouse(Document):
+class Warehouse(Document, TimeStampMixin):
     name: str = Field(..., min_length=3, max_length=100, description="Warehouse display name")
-    code: str = Field(..., min_length=2, max_length=10, description="Short unique identifier (e.g., 'WH-MAIN')")
-    branch_id: str = Field(..., description="Associated branch reference")
+    code: str = Field(..., min_length=2, max_length=100, description="Short unique identifier (e.g., 'WH-MAIN')")
+    branch_id: PydanticObjectId = Field(..., description="Associated branch reference")
     warehouse_type: WarehouseType = Field(
-        default=WarehouseType.BRANCH,
+        default=WarehouseType.USER,
         description="Classification of warehouse"
     )
     description: Optional[str] = Field(
@@ -27,22 +22,14 @@ class Warehouse(Document):
     location: Optional[str] = Field(
         None,
         max_length=200,
-        description="Physical address or location identifier"
+        description="Physical address or location identifier. Physical warehouse ONLY"
     )
     capacity: Optional[int] = Field(
         None,
         gt=0,
-        description="Total storage capacity in cubic meters"
+        description="Total storage capacity in cubic meters. Physical warehouse ONLY"
     )
-    is_active: bool = Field(
-        default=True,
-        description="Soft delete flag"
-    )
-    contact_phone: Optional[str] = Field(
-        None,
-        pattern=r"^\+?[\d\s-]{10,15}$",
-        description="Primary contact number"
-    )
+
     created_by: Optional[str] = Field(
         None,
         description="User ID who created this record"
@@ -50,14 +37,6 @@ class Warehouse(Document):
     updated_by: Optional[str] = Field(
         None,
         description="User ID who last updated this record"
-    )
-    created_at: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc),
-        description="Record creation timestamp"
-    )
-    updated_at: Optional[datetime] = Field(
-        None,
-        description="Last modification timestamp"
     )
 
     class Settings:
@@ -98,7 +77,6 @@ class Warehouse(Document):
                 "location": "23 Bode Thomas Street, Surulere, Lagos",
                 "capacity": 1500,
                 "is_active": True,
-                "contact_phone": "+2348012345678",
                 "created_by": "user_901234",
                 "updated_by": "user_901234",
                 "created_at": "2025-07-15T09:30:00Z",

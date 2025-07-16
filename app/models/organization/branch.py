@@ -1,17 +1,20 @@
-from beanie import Document
-from pydantic import Field
-from datetime import datetime, timezone
+from beanie import Document, PydanticObjectId
 from typing import Optional
+from app.models.base import TimeStampMixin
 
-class Branch(Document):
+class Branch(Document, TimeStampMixin):
     name: str
     code: str  # unique code like "BR001"
     address: Optional[str] = None
-    created_by: Optional[str] = None
-    updated_by: Optional[str] = None
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at: Optional[datetime] = None
-    is_active: bool = True
+    
+    created_by: Optional[PydanticObjectId] = None
+    updated_by: Optional[PydanticObjectId] = None
+
+    state_id: Optional[PydanticObjectId] = None
+    area_id: Optional[PydanticObjectId] = None
+    region_id: Optional[PydanticObjectId] = None    
+    country_id: Optional[PydanticObjectId] = None
+
 
     class Settings:
         name = "branches"

@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from beanie import PydanticObjectId
 from app.services.role_service import RoleService
-from app.schemas.role import RoleCreate, RoleUpdate, RolePatch, RoleResponse
+from app.schemas.role import RoleCreate, RolePatch, RoleResponse
 from app.core.auth import require_permissions
-from app.exceptions import RoleNotFound, InvalidPermissionSet
+from app.services.exceptions import NotFoundError, InvalidPermissionSet
 from typing import List
 
 router = APIRouter()
@@ -45,7 +45,7 @@ async def get_role(
 ) -> RoleResponse:
     try:
         return await RoleService.get_role(role_id)
-    except RoleNotFound:
+    except NotFoundError:
         raise HTTPException(status_code=404, detail="Role not found")
     except Exception:
         raise HTTPException(
@@ -56,12 +56,12 @@ async def get_role(
 @router.put("/roles/{role_id}", response_model=RoleResponse)
 async def update_role(
     role_id: PydanticObjectId,
-    role_data: RoleUpdate,
+    role_data: RolePatch,
     current_user: str = Depends(require_permissions("super_admin"))
 ) -> RoleResponse:
     try:
         return await RoleService.full_update(role_id, role_data, current_user)
-    except RoleNotFound:
+    except NotFoundError:
         raise HTTPException(status_code=404, detail="Role not found")
     except InvalidPermissionSet as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -79,7 +79,7 @@ async def patch_role(
 ) -> RoleResponse:
     try:
         return await RoleService.partial_update(role_id, role_data, current_user)
-    except RoleNotFound:
+    except NotFoundError:
         raise HTTPException(status_code=404, detail="Role not found")
     except InvalidPermissionSet as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -96,7 +96,7 @@ async def delete_role(
 ) -> None:
     try:
         await RoleService.archive_role(role_id, current_user)
-    except RoleNotFound:
+    except NotFoundError:
         raise HTTPException(status_code=404, detail="Role not found")
     except Exception:
         raise HTTPException(

@@ -6,7 +6,7 @@ from app.models.otp import OTP
 from app.schemas.auth import LoginRequest
 from app.core.settings import settings
 from app.core.security import verify_password
-from app.exceptions import (
+from app.services.exceptions import (
     InvalidCredentials,
     OTPExpired,
     OTPNotFound,

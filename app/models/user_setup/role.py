@@ -26,8 +26,8 @@ class Role(Document):
           [("status", ASCENDING), ("created_at", DESCENDING)],  # Compound index
       ]
 
-  model_config = ConfigDict(
-      json_schema_extra={
+  model_config = {
+      "json_schema_extra": {
           "example": {
               "name": "user_manager",
               "status": "active",
@@ -36,8 +36,8 @@ class Role(Document):
               "created_at": "2025-07-05T11:00:00Z"
           }
       },
-      from_attributes=True
-  )
+      "from_attributes": True
+  }
 
   async def update_timestamp(self):
       """Update the updated_at field"""

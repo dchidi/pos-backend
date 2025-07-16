@@ -32,17 +32,4 @@ class AuditLog(Document):
     class Settings:
         name = "audit_logs"
 
-    class Config:
-        schema_extra = {
-            "example": {
-                "model_name": "Account",
-                "document_id": "664f8a78a843d1ee9047dc12",
-                "action": "UPDATE",
-                "changed_by": "admin_user_id",
-                "changes": {
-                    "name": ["Cash", "Cash at Bank"],
-                    "currency": ["USD", "NGN"]
-                },
-                "reason": "Updated for branch compliance"
-            }
-        }
+ 

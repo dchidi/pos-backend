@@ -1,3 +1,4 @@
+# This list must be manually populated when endpoints are created.
 PERMISSION_GROUPS = [
     {
         "group": "super_admin",

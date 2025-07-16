@@ -4,7 +4,7 @@ from app.services.auth_service import (
     authenticate_user, create_access_token, generate_otp, verify_otp
 )
 from app.utils.mail import send_otp_email
-from app.exceptions import *
+from app.services.exceptions import *
 
 router = APIRouter()
 

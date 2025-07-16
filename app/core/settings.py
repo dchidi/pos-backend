@@ -1,4 +1,5 @@
-# app/core/settings.py
+from typing import List
+from pydantic import AnyHttpUrl
 from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
@@ -20,6 +21,8 @@ class Settings(BaseSettings):
     PROJECT_VERSION: str = 'v1.0.0'
 
     OTP_EXPIRY_TIME_MINUTES: int = 30
+
+    CORS_ORIGINS: List[AnyHttpUrl] = ["http://localhost:3000"]  # or ["*"] for all
 
     class Config:
         env_file = ".env"

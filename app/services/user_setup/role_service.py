@@ -1,8 +1,8 @@
 from datetime import datetime, timezone
 from beanie import PydanticObjectId
 from app.models.role import Role
-from app.schemas.role import RoleCreate, RoleUpdate, RolePatch
-from app.exceptions import RoleNotFound, InvalidPermissionSet
+from app.schemas.role import RoleCreate, RolePatch, RolePatch
+from app.services.exceptions import NotFoundError, InvalidPermissionSet
 
 class RoleService:
     @staticmethod
@@ -29,18 +29,18 @@ class RoleService:
     async def get_role(role_id: PydanticObjectId) -> Role:
         role = await Role.get(role_id)
         if not role:
-            raise RoleNotFound()
+            raise NotFoundError()
         return role
 
     @staticmethod
     async def full_update(
         role_id: PydanticObjectId, 
-        role_data: RoleUpdate,
+        role_data: RolePatch,
         modified_by: str
     ) -> Role:
         role = await Role.get(role_id)
         if not role:
-            raise RoleNotFound()
+            raise NotFoundError()
             
         update_data = role_data.model_dump()
         update_data["updated_at"] = datetime.now(timezone.utc)
@@ -57,7 +57,7 @@ class RoleService:
     ) -> Role:
         role = await Role.get(role_id)
         if not role:
-            raise RoleNotFound()
+            raise NotFoundError()
             
         update_data = role_data.model_dump(exclude_unset=True)
         if update_data:
@@ -71,7 +71,7 @@ class RoleService:
     async def archive_role(role_id: PydanticObjectId, modified_by: str) -> None:
         role = await Role.get(role_id)
         if not role:
-            raise RoleNotFound()
+            raise NotFoundError()
             
         role.status = "archived"
         role.last_modified_by = modified_by

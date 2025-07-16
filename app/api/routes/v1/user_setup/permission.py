@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, status, Depends
 from app.utils.permission_filter import filter_super_admin
-from app.exceptions import *
+from app.services.exceptions import *
 from app.constants.permissions import PERMISSION_GROUPS
 from app.core.auth import require_permissions
 
