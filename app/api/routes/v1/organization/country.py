@@ -1,36 +1,31 @@
 from fastapi import APIRouter, Query, Path, status
 from typing import List, Optional
 
-from app.schemas.organization.location import LocationCreate, LocationUpdate, LocationResponse
-from app.services.organization.country import (
-    create_country,
-    get_country,
-    list_countries,
-    update_country,
-    delete_country,
-    restore_country,
-    disable_country,
-    activate_country
+from app.schemas.organization.location import (
+    CountryCreate, CountryUpdate, CountryResponse
 )
-# from app.api.routes.v1.handle_errors import handle_service_errors
-
+from app.services.organization.country import (
+    create_country, get_country, list_countries,
+    update_country, delete_country, restore_country,
+    disable_country, activate_country
+)
 
 router = APIRouter()
 
 
 @router.post(
     "/",
-    response_model=LocationResponse,
+    response_model=CountryResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Create a new country",
 )
-async def create_country_route(payload: LocationCreate):
+async def create_country_route(payload: CountryCreate):
     return await create_country(payload)
 
 
 @router.get(
     "/",
-    response_model=List[LocationResponse],
+    response_model=List[CountryResponse],
     summary="List countrys with optional filters",
 )
 async def get_countrys_route(
@@ -61,11 +56,11 @@ async def get_countrys_route(
 
 @router.get(
     "/{country_id}",
-    response_model=LocationResponse,
+    response_model=CountryResponse,
     summary="Get a single country by ID",
 )
 async def get_country_route(
-    country_id: str = Path(..., description="Brand ObjectId"),
+    country_id: str = Path(..., description="Country ObjectId"),
     include_deleted: bool = Query(
         False, description="Include if the country is soft-deleted"
     ),
@@ -75,12 +70,12 @@ async def get_country_route(
 
 @router.put(
     "/{country_id}",
-    response_model=LocationResponse,
+    response_model=CountryResponse,
     summary="Update an existing country",
 )
 async def update_country_route(
-    country_id: str = Path(..., description="Brand ObjectId"),
-    payload: LocationUpdate = ...,
+    country_id: str = Path(..., description="Country ObjectId"),
+    payload: CountryUpdate = ...,
 ):
     return await update_country(country_id, payload)
 
@@ -91,18 +86,18 @@ async def update_country_route(
     summary="Soft-delete a country",
 )
 async def delete_country_route(
-    country_id: str = Path(..., description="Brand ObjectId"),
+    country_id: str = Path(..., description="Country ObjectId"),
 ):
     await delete_country(country_id)
 
 
 @router.patch(
     "/{country_id}/restore",
-    response_model=LocationResponse,
+    response_model=CountryResponse,
     summary="Restore a soft-deleted country",
 )
 async def restore_country_route(
-    country_id: str = Path(..., description="Brand ObjectId"),
+    country_id: str = Path(..., description="Country ObjectId"),
 ):
     return await restore_country(country_id)
 
@@ -113,17 +108,17 @@ async def restore_country_route(
     summary="Deactivate a country",
 )
 async def disable_country_route(
-    country_id: str = Path(..., description="Brand ObjectId"),
+    country_id: str = Path(..., description="Country ObjectId"),
 ):
     await disable_country(country_id)
 
 
 @router.patch(
     "/{country_id}/activate",
-    response_model=LocationResponse,
+    response_model=CountryResponse,
     summary="Activate a disabled country",
 )
-async def restore_country_route(
-    country_id: str = Path(..., description="Brand ObjectId"),
+async def activate_country_route(
+    country_id: str = Path(..., description="Country ObjectId"),
 ):
     return await activate_country(country_id)

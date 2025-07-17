@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Query, Path, status
 from typing import List, Optional
 
-from app.schemas.organization.location import AreaCreate, LocationUpdate, AreaResponse
+from app.schemas.organization.location import AreaCreate, AreaUpdate, AreaResponse
 from app.services.organization.area import (
     create_area,
     get_area,
@@ -80,7 +80,7 @@ async def get_area_route(
 )
 async def update_area_route(
     area_id: str = Path(..., description="Brand ObjectId"),
-    payload: LocationUpdate = ...,
+    payload: AreaUpdate = ...,
 ):
     return await update_area(area_id, payload)
 

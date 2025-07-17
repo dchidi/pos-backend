@@ -1,188 +1,153 @@
-from typing import TypeVar, Generic, Optional, Type, Any, List, Dict, Union
-from beanie import Document, PydanticObjectId
+from typing import (
+    Type, TypeVar, Generic, List, Optional, Union, Dict, Any, Tuple
+)
 from pydantic import BaseModel
-from enum import Enum, auto
-from app.services.exceptions import NotFoundError, ValidationError
+from beanie import Document, PydanticObjectId
+from app.services.exceptions import (
+    NotFoundError, AlreadyExistsError, ValidationError
+)
+from app.constants.sort_order import SortOrder
 
-T = TypeVar('T', bound=Document)
-CreateSchema = TypeVar('CreateSchema', bound=BaseModel)
-UpdateSchema = TypeVar('UpdateSchema', bound=BaseModel)
+ModelType = TypeVar("ModelType", bound=Document)
 
-class ObjectState(Enum):
-    ACTIVE = auto()
-    INACTIVE = auto()
-    DELETED = auto()
 
-class FilterOperator(Enum):
-    EQ = "=="
-    NE = "!="
-    GT = ">"
-    LT = "<"
-    IN = "in"
-
-class BaseCRUDService(Generic[T, CreateSchema, UpdateSchema]):
-    def __init__(self, model: Type[T]):
+class CRUD(Generic[ModelType]):
+    def __init__(self, model: Type[ModelType]):
         self.model = model
-        self.soft_delete_enabled = hasattr(model, 'is_deleted')
-        self.activation_enabled = hasattr(model, 'is_active')
-    
-    # CREATE
-    async def create(self, data: CreateSchema, **kwargs) -> T:
-        await self._validate_create(data)
-        obj = self.model(**data.model_dump(), **kwargs)
-        await obj.insert()
-        return obj
 
-    # READ
-    async def get(self, id: str, include_deleted: bool = False, **kwargs) -> T:
+    async def create(
+        self,
+        payload: BaseModel,
+        unique_fields: Optional[List[str]] = None
+    ) -> ModelType:
+        """
+        Create a new document, validating and enforcing uniqueness on specified fields.
+        :param payload: A Pydantic model with the data to insert.
+        :param unique_fields: List of document field names to check for uniqueness.
+        :returns: The inserted document instance.
+        """
+        data = payload.model_dump()
+        checks = unique_fields or []
+
+        # 1) Validate non-empty for each unique field
+        filters = []
+        for field in checks:
+            val = data.get(field, "")
+            if not isinstance(val, str) or not val.strip():
+                raise ValidationError(f"'{field}' must not be empty")
+            filters.append({field: val.strip()})
+
+        # 2) Check for duplicates
+        if filters:
+            existing = await self.model.find_one({"$or": filters})
+            if existing:
+                for field in checks:
+                    if getattr(existing, field) == data[field].strip():
+                        raise AlreadyExistsError(
+                            f"{self.model.__name__} '{field}' = {data[field]!r} already exists"
+                        )
+
+        # 3) Instantiate & insert
+        instance = self.model(**data)
+        await instance.insert()
+        return instance
+
+    async def get_by_id(
+        self,
+        doc_id: Union[PydanticObjectId, str],
+        include_deleted: bool = False
+    ) -> ModelType:
         try:
-            oid = PydanticObjectId(id)
+            oid = PydanticObjectId(doc_id)
         except Exception:
-            raise NotFoundError(f"Invalid ID format: {id}")
-        
-        query = {"_id": oid}
-        if not include_deleted and self.soft_delete_enabled:
-            query["is_deleted"] = False
-            
-        obj = await self.model.find_one(query, **kwargs)
-        if not obj:
-            raise NotFoundError(f"{self.model.__name__} not found: {id}")
+            raise NotFoundError(f"Invalid ID '{doc_id}'")
+
+        obj = await self.model.get(oid)
+        if obj is None or (getattr(obj, 'is_deleted', False) and not include_deleted):
+            raise NotFoundError(f"{self.model.__name__} with ID '{doc_id}' not found")
         return obj
 
-    # UPDATE
-    async def update(self, id: str, data: UpdateSchema, **kwargs) -> T:
-        obj = await self.get(id)
-        update_data = data.model_dump(exclude_unset=True)
-        await self._validate_update(obj, update_data)
-        
-        for field, value in update_data.items():
-            setattr(obj, field, value)
-        await obj.save()
-        return obj
-
-    # DELETE
-    async def delete(self, id: str, permanent: bool = False, **kwargs) -> bool:
-        obj = await self.get(id)
-        
-        # Check for dependencies if the model has the method
-        if hasattr(self, '_check_dependencies'):
-            await self._check_dependencies(obj)
-            
-        if permanent or not self.soft_delete_enabled:
-            await obj.delete()
-            return True
-        
-        await self.change_state(obj, ObjectState.DELETED)
-        return True
-
-    # LIST
     async def list(
         self,
-        filters: Optional[Dict[str, Any]] = None,
-        search: Optional[str] = None,
         skip: int = 0,
-        limit: int = 100,
+        limit: int = 50,
         include_deleted: bool = False,
-        **kwargs
-    ) -> List[T]:
-        query = self._build_base_query(include_deleted)
-        
+        filters: Optional[Dict[str, Any]] = None,
+        sort: Optional[List[Tuple[str, SortOrder]]] = None
+    ) -> List[ModelType]:
+        """
+        List documents with optional filters, pagination, soft-delete flag, and sorting.
+        :param skip: Number of documents to skip.
+        :param limit: Maximum number of documents to return.
+        :param include_deleted: Whether to include soft-deleted documents.
+        :param filters: Field-based equality filters; keys with None values are ignored.
+        :param sort: List of (field, SortOrder) tuples; defaults to _id ASC.
+        :returns: List of document instances.
+        """
+        # Build base filter dict
+        query_filter: Dict[str, Any] = {}
+        if not include_deleted:
+            query_filter['is_deleted'] = False
+        # Merge non-None filters
         if filters:
             for field, value in filters.items():
-                if isinstance(value, dict) and 'operator' in value:
-                    op = FilterOperator(value['operator'])
-                    query = query.find({field: {op.value: value['value']}})
-                else:
-                    query = query.find({field: value})
-        
-        if search and hasattr(self.model, 'search_fields'):
-            search_conditions = [
-                {field: {"$regex": search, "$options": "i"}} 
-                for field in self.model.search_fields
-            ]
-            query = query.find({"$or": search_conditions})
-            
-        return await query.skip(skip).limit(limit).to_list()
+                if value is not None:
+                    query_filter[field] = value
 
-    # STATE MANAGEMENT
-    async def change_state(
+        # Determine sort parameters: use SortOrder enum values
+        sort_orders = sort or [("_id", SortOrder.ASC)]
+        sort_params = [(field, order.value) for field, order in sort_orders]
+
+        # Execute query once with combined filters and sort
+        qb = self.model.find(query_filter).sort(sort_params)
+        return await qb.skip(skip).limit(limit).to_list()
+
+    async def update(
         self,
-        id_or_obj: Union[str, T],
-        target_state: ObjectState,
-        **kwargs
-    ) -> T:
-        """Handle state changes with proper validation"""
-        obj = await self._get_obj_for_state_change(id_or_obj, target_state)
-        
-        current_state = self._get_current_state(obj)
-        
-        # Validate state transition
-        if not self._is_valid_transition(current_state, target_state):
-            raise ValidationError(
-                f"Cannot transition {self.model.__name__} from {current_state.name.lower()} "
-                f"to {target_state.name.lower()}"
-            )
-            
-        self._apply_state_change(obj, target_state)
+        doc_id: Union[PydanticObjectId, str],
+        payload: BaseModel,
+        unique_fields: Optional[List[str]] = None
+    ) -> ModelType:
+        obj = await self.get_by_id(doc_id)
+        data = payload.model_dump(exclude_unset=True)
+        checks = [f for f in (unique_fields or []) if f in data]
+
+        # Validate non-empty and build duplicate filters
+        dup_filters = []
+        for field in checks:
+            val = data[field]
+            if not isinstance(val, str) or not val.strip():
+                raise ValidationError(f"'{field}' must not be empty")
+            dup_filters.append({field: val.strip(), '_id': {'$ne': obj.id}})
+
+        # Check for duplicates
+        if dup_filters:
+            existing = await self.model.find_one({'$or': dup_filters})
+            if existing:
+                for field in checks:
+                    if getattr(existing, field) == data[field].strip():
+                        raise AlreadyExistsError(
+                            f"{self.model.__name__} '{field}' = {data[field]!r} already exists"
+                        )
+
+        # Apply updates
+        for field, val in data.items():
+            setattr(obj, field, val)
+        await obj.replace()
+        return obj
+
+    async def soft_delete(
+        self,
+        doc_id: Union[PydanticObjectId, str]
+    ) -> ModelType:
+        obj = await self.get_by_id(doc_id, include_deleted=True)
+        setattr(obj, 'is_deleted', True)
         await obj.save()
         return obj
 
-    async def activate(self, id: str, **kwargs) -> T:
-        return await self.change_state(id, ObjectState.ACTIVE, **kwargs)
-
-    async def deactivate(self, id: str, **kwargs) -> T:
-        return await self.change_state(id, ObjectState.INACTIVE, **kwargs)
-
-    async def restore(self, id: str, **kwargs) -> T:
-        return await self.change_state(id, ObjectState.ACTIVE, **kwargs)
-
-    # PROTECTED METHODS
-    async def _get_obj_for_state_change(self, id_or_obj: Union[str, T], target_state: ObjectState) -> T:
-        """Helper to get object for state changes with proper include_deleted flag"""
-        if isinstance(id_or_obj, str):
-            include_deleted = target_state in (ObjectState.ACTIVE, ObjectState.RESTORE)
-            return await self.get(id_or_obj, include_deleted=include_deleted)
-        return id_or_obj
-
-    def _is_valid_transition(self, current: ObjectState, target: ObjectState) -> bool:
-        """Validate state transition rules"""
-        transitions = {
-            ObjectState.ACTIVE: [ObjectState.INACTIVE, ObjectState.DELETED],
-            ObjectState.INACTIVE: [ObjectState.ACTIVE, ObjectState.DELETED],
-            ObjectState.DELETED: [ObjectState.ACTIVE]
-        }
-        return target in transitions.get(current, [])
-
-    def _build_base_query(self, include_deleted: bool = False):
-        query = self.model.find()
-        if not include_deleted and self.soft_delete_enabled:
-            query = query.find(self.model.is_deleted == False)
-        if self.activation_enabled:
-            query = query.find(self.model.is_active == True)
-        return query
-
-    def _get_current_state(self, obj: T) -> ObjectState:
-        if getattr(obj, 'is_deleted', False):
-            return ObjectState.DELETED
-        if not getattr(obj, 'is_active', True):
-            return ObjectState.INACTIVE
-        return ObjectState.ACTIVE
-
-    def _apply_state_change(self, obj: T, target_state: ObjectState):
-        if target_state == ObjectState.ACTIVE:
-            obj.is_active = True
-            obj.is_deleted = False
-        elif target_state == ObjectState.INACTIVE:
-            obj.is_active = False
-        elif target_state == ObjectState.DELETED:
-            obj.is_active = False
-            obj.is_deleted = True
-
-    # VALIDATION HOOKS (to be overridden)
-    async def _validate_create(self, data: CreateSchema):
-        """Pre-create validation"""
-        pass
-
-    async def _validate_update(self, obj: T, update_data: dict):
-        """Pre-update validation"""
-        pass
+    async def delete(
+        self,
+        doc_id: Union[PydanticObjectId, str]
+    ) -> None:
+        obj = await self.get_by_id(doc_id, include_deleted=True)
+        await obj.delete()

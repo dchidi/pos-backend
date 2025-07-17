@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Query, Path, status
 from typing import List, Optional
 
-from app.schemas.organization.location import RegionCreate, LocationUpdate, RegionResponse
+from app.schemas.organization.location import RegionCreate, RegionUpdate, RegionResponse
 from app.services.organization.region import (
     create_region,
     get_region,
@@ -42,20 +42,12 @@ async def get_regions_route(
     name: Optional[str] = Query(
         None, description="Exact match on region name"
     ),
-    company_id: Optional[str] = Query(
-        None, description="Filter by owning company ID"
-    ),
-    category_id: Optional[str] = Query(
-        None, description="Filter by associated category ID"
-    ),
 ):
     return await list_regions(
         skip,
         limit,
         include_deleted,
         name,
-        company_id,
-        category_id,
     )
 
 
@@ -80,7 +72,7 @@ async def get_region_route(
 )
 async def update_region_route(
     region_id: str = Path(..., description="Brand ObjectId"),
-    payload: LocationUpdate = ...,
+    payload: RegionUpdate = ...,
 ):
     return await update_region(region_id, payload)
 

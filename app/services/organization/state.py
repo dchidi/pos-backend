@@ -1,8 +1,10 @@
 from typing import List, Optional
 from beanie import PydanticObjectId
 from app.models.organization.state import State
-from app.schemas.organization.location import StateCreate, LocationUpdate
-from app.services.exceptions import NotFoundError, AlreadyExistsError, ValidationError
+from app.schemas.organization.location import StateCreate, StateUpdate
+from app.services.exceptions import (
+    NotFoundError, AlreadyExistsError, ValidationError
+)
 
 
 async def create_state(data: StateCreate) -> State:
@@ -56,7 +58,7 @@ async def list_states(
         qb = qb.find({'updated_by': updated_by})
     return await qb.skip(skip).limit(limit).to_list()
 
-async def update_state(state_id: str, data: LocationUpdate) -> State:
+async def update_state(state_id: str, data: StateUpdate) -> State:
     """Update fields on an existing state."""
     state = await get_state(state_id)
     update_data = data.model_dump(exclude_unset=True)

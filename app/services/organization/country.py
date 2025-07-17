@@ -1,11 +1,13 @@
 from typing import List, Optional
 from beanie import PydanticObjectId
 from app.models.organization.country import Country
-from app.schemas.organization.location import LocationCreate, LocationUpdate
-from app.services.exceptions import NotFoundError, AlreadyExistsError, ValidationError
+from app.schemas.organization.location import CountryCreate, CountryUpdate
+from app.services.exceptions import (
+    NotFoundError, AlreadyExistsError, ValidationError
+)
 
 
-async def create_country(data: LocationCreate) -> Country:
+async def create_country(data: CountryCreate) -> Country:
     """Create a new country, enforcing business rules."""
     if not (data.name.strip() or data.name.strip()):
         raise ValidationError("Country name or code must not be empty")
@@ -56,33 +58,56 @@ async def list_countries(
         qb = qb.find({'updated_by': updated_by})
     return await qb.skip(skip).limit(limit).to_list()
 
-async def update_country(country_id: str, data: LocationUpdate) -> Country:
+
+async def update_country(country_id: str, data: CountryUpdate) -> Country:
     """Update fields on an existing country."""
     country = await get_country(country_id)
     update_data = data.model_dump(exclude_unset=True)
-    # Name validations
-    if 'name' in update_data or 'code' in update_data:
-        if not update_data['name'].strip():
+
+    # 1) Per‑field validation & normalization
+    if 'name' in update_data:
+        name = update_data['name'].strip()
+        if not name:
             raise ValidationError("Country name must not be empty")
-        
-        if 'name' in update_data or 'code' in update_data:
-            # Check for conflicts in name OR code
-            existing = await Country.find_one({
-                "$or": [
-                    {"name": update_data.get('name'), "_id": {"$ne": country.id}},
-                    {"code": update_data.get('code'), "_id": {"$ne": country.id}},
-                ]
-            })
-            if existing:
-                conflict_field = "name" if existing.name == update_data.get('name') else "code"
-                raise AlreadyExistsError(
-                    f"Country {conflict_field} '{update_data[conflict_field]}' already exists"
-                )
-        
+        update_data['name'] = name
+
+    if 'code' in update_data:
+        code = update_data['code'].strip().upper()
+        if not code:
+            raise ValidationError("Country code must not be empty")
+        update_data['code'] = code
+
+    # 2) Build conflict filters dynamically
+    conflict_filters = []
+    if 'name' in update_data:
+        conflict_filters.append(
+            {"name": update_data['name'], "_id": {"$ne": country.id}}
+        )
+    if 'code' in update_data:
+        conflict_filters.append(
+            {"code": update_data['code'], "_id": {"$ne": country.id}}
+        )
+
+    # 3) Only if we have something to check, look for duplicates
+    if conflict_filters:
+        existing = await Country.find_one({"$or": conflict_filters})
+        if existing:
+            # determine which field conflicted
+            if 'name' in update_data and existing.name == update_data['name']:
+                field = 'name'
+            else:
+                field = 'code'
+            raise AlreadyExistsError(
+                f"Country {field} '{update_data[field]}' already exists"
+            )
+
+    # 4) Apply the updates
     for field, val in update_data.items():
         setattr(country, field, val)
+
     await country.replace()
     return country
+
 
 async def delete_country(country_id: str) -> None:
     """Soft-delete a country."""

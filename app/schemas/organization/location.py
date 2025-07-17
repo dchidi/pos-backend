@@ -11,12 +11,11 @@ class LocationBase(BaseModel):
     updated_by: Optional[PyObjectId] = Field(None, example="64f95b0c2ab5ec9e0b22c77f")
 
 
-class LocationCreate(LocationBase):
-    """Base schema for creating a location entry (e.g., Country, Region, Area)."""
+class CountryCreate(LocationBase):
     pass
 
 
-class RegionCreate(LocationCreate):
+class RegionCreate(CountryCreate):
     country_id: Optional[PyObjectId] = Field(None, example="64f95b0c2ab5ec9e0b22c77f")
 
 
@@ -27,32 +26,36 @@ class AreaCreate(RegionCreate):
 class StateCreate(AreaCreate):    
     area_id: Optional[PyObjectId] = Field(None, example="64f95b0c2ab5ec9e0b22c77f")
 
-
-class LocationUpdate(BaseModel):
+class CountryUpdate(BaseModel):
     """Schema for updating any location type."""
     name: Optional[str] = Field(None)
     code: Optional[str] = Field(None)
-    country_id: Optional[PyObjectId] = Field(None)
-    region_id: Optional[PyObjectId] = Field(None)
-    area_id: Optional[PyObjectId] = Field(None)
     created_by: Optional[PyObjectId] = Field(None)
     updated_by: Optional[PyObjectId] = Field(None)
 
+class RegionUpdate(CountryUpdate):
+    country_id: Optional[PyObjectId] = Field(None)
 
-class LocationResponse(LocationBase, BaseResponse):
+class AreaUpdate(RegionUpdate):
+    country_id: Optional[PyObjectId] = Field(None)
+    region_id: Optional[PyObjectId] = Field(None)
+
+class StateUpdate(AreaUpdate):
+    country_id: Optional[PyObjectId] = Field(None)
+    region_id: Optional[PyObjectId] = Field(None)
+    area_id: Optional[PyObjectId] = Field(None)
+
+class CountryResponse(LocationBase, BaseResponse):
     created_at: datetime
     updated_at: datetime
     is_active: bool
     is_deleted: bool
 
-
-class RegionResponse(LocationResponse):
+class RegionResponse(CountryResponse):
     country_id: Optional[PyObjectId] = Field(None, example="64f95b0c2ab5ec9e0b22c77f")
-
-
+    
 class AreaResponse(RegionResponse):
     region_id: Optional[PyObjectId] = Field(None, example="64f95b0c2ab5ec9e0b22c77f")
-
 
 class StateResponse(AreaResponse):    
     area_id: Optional[PyObjectId] = Field(None, example="64f95b0c2ab5ec9e0b22c77f")

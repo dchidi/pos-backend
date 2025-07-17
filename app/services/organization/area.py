@@ -1,8 +1,10 @@
 from typing import List, Optional
 from beanie import PydanticObjectId
 from app.models.organization.area import Area
-from app.schemas.organization.location import AreaCreate, LocationUpdate
-from app.services.exceptions import NotFoundError, AlreadyExistsError, ValidationError
+from app.schemas.organization.location import AreaCreate, AreaUpdate
+from app.services.exceptions import (
+    NotFoundError, AlreadyExistsError, ValidationError
+)
 
 
 async def create_area(data: AreaCreate) -> Area:
@@ -56,7 +58,7 @@ async def list_areas(
         qb = qb.find({'updated_by': updated_by})
     return await qb.skip(skip).limit(limit).to_list()
 
-async def update_area(area_id: str, data: LocationUpdate) -> Area:
+async def update_area(area_id: str, data: AreaUpdate) -> Area:
     """Update fields on an existing area."""
     area = await get_area(area_id)
     update_data = data.model_dump(exclude_unset=True)

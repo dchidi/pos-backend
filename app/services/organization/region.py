@@ -1,32 +1,33 @@
 from typing import List, Optional
 from beanie import PydanticObjectId
 from app.models.organization.region import Region
-from app.schemas.organization.location import RegionCreate, LocationUpdate
-from app.services.exceptions import NotFoundError, AlreadyExistsError, ValidationError
+from app.schemas.organization.location import RegionCreate, RegionUpdate
+from app.services.exceptions import (
+    NotFoundError, AlreadyExistsError, ValidationError
+)
+from app.services.crud_services import CRUD
+
+crud = CRUD(Region)
 
 
 async def create_region(data: RegionCreate) -> Region:
-    """Create a new region, enforcing business rules."""
-    if not (data.name.strip() or data.name.strip()):
-        raise ValidationError("Region name or code must not be empty")
-    # Unique name check
-    existing_region = await Region.find_one({"code":data.code})
-    if existing_region:
-        raise AlreadyExistsError(f"Region '{data.name}' or '{data.code}' already exists")
-    region = Region(**data.model_dump())
-    await region.insert()
-    return region
+    res = await crud.create(data, unique_fields=["name", "code"])
+    return res
+
 
 async def get_region(region_id: str, include_flag: bool = False) -> Region:
-    """Retrieve a region by ID, optionally including deleted ones."""
-    try:
-        oid = PydanticObjectId(region_id)
-    except Exception:
-        raise NotFoundError(f"Invalid region ID '{region_id}'")
-    region = await Region.get(oid)
-    if not region or (region.is_deleted and not include_flag):
-        raise NotFoundError(f"Region '{region_id}' not found or deleted")
-    return region
+    res = await crud.get_by_id(region_id, include_flag)
+    return res
+    # """Retrieve a region by ID, optionally including deleted ones."""
+    # try:
+    #     oid = PydanticObjectId(region_id)
+    # except Exception:
+    #     raise NotFoundError(f"Invalid region ID '{region_id}'")
+    # region = await Region.get(oid)
+    # if not region or (region.is_deleted and not include_flag):
+    #     raise NotFoundError(f"Region '{region_id}' not found or deleted")
+    # return region
+
 
 async def list_regions(
     skip: int = 0,
@@ -34,29 +35,41 @@ async def list_regions(
     include_deleted: bool = False,
     name: Optional[str] = None,
     code: Optional[str] = None,
-    created_by: Optional[str] = None,    
+    created_by: Optional[str] = None,
     updated_by: Optional[str] = None,
 ) -> List[Region]:
-    """List regions with optional filters and deletion flag."""
-    qb = Region.find()
-    # Soft-delete filter
-    if not include_deleted:
-        qb = qb.find(Region.is_active == True, Region.is_deleted == False)
-    # Name filter
-    if name:
-        qb = qb.find(Region.name == name)
-    # Cpde filter
-    if code:
-        qb = qb.find(Region.code == code)
-    # created by filter
-    if created_by:
-        qb = qb.find({'created_by': created_by})
 
-    if updated_by:
-        qb = qb.find({'updated_by': updated_by})
-    return await qb.skip(skip).limit(limit).to_list()
+    res = await crud.list(
+        skip,
+        limit,
+        include_deleted,
+        filters={
+            "name": name, "code": code,
+            "created_by": created_by, "updated_by": updated_by
+        },
+        # sort: Optional[List[Tuple[str, SortOrder]]] = None
+    )
+    return res
+    # """List regions with optional filters and deletion flag."""
+    # qb = Region.find()
+    # # Soft-delete filter
+    # if not include_deleted:
+    #     qb = qb.find(Region.is_active == True, Region.is_deleted == False)
+    # # Name filter
+    # if name:
+    #     qb = qb.find(Region.name == name)
+    # # Cpde filter
+    # if code:
+    #     qb = qb.find(Region.code == code)
+    # # created by filter
+    # if created_by:
+    #     qb = qb.find({'created_by': created_by})
 
-async def update_region(region_id: str, data: LocationUpdate) -> Region:
+    # if updated_by:
+    #     qb = qb.find({'updated_by': updated_by})
+    # return await qb.skip(skip).limit(limit).to_list()
+
+async def update_region(region_id: str, data: RegionUpdate) -> Region:
     """Update fields on an existing region."""
     region = await get_region(region_id)
     update_data = data.model_dump(exclude_unset=True)

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Query, Path, status
 from typing import List, Optional
 
-from app.schemas.organization.location import StateCreate, LocationUpdate, StateResponse
+from app.schemas.organization.location import StateCreate, StateUpdate, StateResponse
 from app.services.organization.state import (
     create_state,
     get_state,
@@ -80,7 +80,7 @@ async def get_state_route(
 )
 async def update_state_route(
     state_id: str = Path(..., description="Brand ObjectId"),
-    payload: LocationUpdate = ...,
+    payload: StateUpdate = ...,
 ):
     return await update_state(state_id, payload)
 
