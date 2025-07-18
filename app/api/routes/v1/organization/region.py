@@ -1,7 +1,11 @@
 from fastapi import APIRouter, Query, Path, status
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 
-from app.schemas.organization.location import RegionCreate, RegionUpdate, RegionResponse
+from app.utils.parse_sort_clause import parse_sort
+
+from app.schemas.organization.location import (
+    RegionCreate, RegionUpdate, RegionResponse
+)
 from app.services.organization.region import (
     create_region,
     get_region,
@@ -28,10 +32,13 @@ async def create_region_route(payload: RegionCreate):
     return await create_region(payload)
 
 
+# GET /regions/?skip=0&limit=20&include_deleted=false&name=East%20Region
+# &search_name=Reg&exact_match=false&sort=name,-code
+
 @router.get(
     "/",
     response_model=List[RegionResponse],
-    summary="List regions with optional filters",
+    summary="List regions with optional filters and sorting",
 )
 async def get_regions_route(
     skip: int = Query(0, ge=0),
@@ -39,15 +46,50 @@ async def get_regions_route(
     include_deleted: bool = Query(
         False, description="Include soft-deleted regions"
     ),
-    name: Optional[str] = Query(
-        None, description="Exact match on region name"
+    name: Optional[str] = Query(None, description="Exact match on name"),
+    code: Optional[str] = Query(None, description="Exact match on code"),
+    created_by: Optional[str] = Query(None),
+    updated_by: Optional[str] = Query(None),
+    sort: Optional[str] = Query(
+        None,
+        description="Comma-separated fields to sort by; prefix '-' for DESC. E.g. `sort=name,-code`"
+    ),
+
+    # Search filters (pattern or exact based on flag)
+    search_name: Optional[str] = Query(None, description="Search term for name"),
+    search_code: Optional[str] = Query(None, description="Search term for code"),
+    exact_match: bool = Query(
+        True, description="Flag to require exact match (true) vs pattern search (false)"
     ),
 ):
+    sort_params = parse_sort(sort)
+
+    # Build filters dict
+    filters: Dict[str, Any] = {}
+    if name is not None:
+        filters["name"] = name
+    if created_by is not None:
+        filters["created_by"] = created_by
+    if code is not None:
+        filters["code"] = code
+    if updated_by is not None:
+        filters["updated_by"] = updated_by
+
+    # Build search dict
+    search: Dict[str, str] = {}
+    if search_name:
+        search["name"] = search_name
+    if search_code:
+        search["code"] = search_code
+
     return await list_regions(
-        skip,
-        limit,
-        include_deleted,
-        name,
+        skip=skip,
+        limit=limit,
+        include_deleted=include_deleted,
+        filters=filters or None,
+        search=search or None,
+        exact_match=exact_match,
+        sort_order=sort_params or None,
     )
 
 

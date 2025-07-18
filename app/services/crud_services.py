@@ -1,3 +1,4 @@
+from token import OP
 from typing import (
     Type, TypeVar, Generic, List, Optional, Union, Dict, Any, Tuple
 )
@@ -67,32 +68,87 @@ class CRUD(Generic[ModelType]):
             raise NotFoundError(f"{self.model.__name__} with ID '{doc_id}' not found")
         return obj
 
+    # async def list(
+    #     self,
+    #     skip: int = 0,
+    #     limit: int = 50,
+    #     include_deleted: bool = False,
+    #     filters: Optional[Dict[str, Any]] = None,
+    #     sort: Optional[List[Tuple[str, SortOrder]]] = None
+    # ) -> List[ModelType]:
+    #     """
+    #     List documents with optional filters, pagination, soft-delete flag, and sorting.
+    #     :param skip: Number of documents to skip.
+    #     :param limit: Maximum number of documents to return.
+    #     :param include_deleted: Whether to include soft-deleted documents.
+    #     :param filters: Field-based equality filters; keys with None values are ignored.
+    #     :param sort: List of (field, SortOrder) tuples; defaults to _id ASC.
+    #     :returns: List of document instances.
+    #     """
+    #     # Build base filter dict
+    #     query_filter: Dict[str, Any] = {}
+    #     if not include_deleted:
+    #         query_filter['is_deleted'] = False
+    #     # Merge non-None filters
+    #     if filters:
+    #         for field, value in filters.items():
+    #             if value is not None:
+    #                 query_filter[field] = value
+
+    #     # Determine sort parameters: use SortOrder enum values
+    #     sort_orders = sort or [("_id", SortOrder.ASC)]
+    #     sort_params = [(field, order.value) for field, order in sort_orders]
+
+    #     # Execute query once with combined filters and sort
+    #     qb = self.model.find(query_filter).sort(sort_params)
+    #     return await qb.skip(skip).limit(limit).to_list()
+
     async def list(
         self,
         skip: int = 0,
         limit: int = 50,
         include_deleted: bool = False,
         filters: Optional[Dict[str, Any]] = None,
-        sort: Optional[List[Tuple[str, SortOrder]]] = None
+        search: Optional[Dict[str, str]] = None,
+        exact_match: bool = False,
+        sort: Optional[List[tuple[str, SortOrder]]] = None
     ) -> List[ModelType]:
         """
-        List documents with optional filters, pagination, soft-delete flag, and sorting.
+        List documents with optional filters, search, pagination, soft-delete flag, and sorting.
         :param skip: Number of documents to skip.
         :param limit: Maximum number of documents to return.
         :param include_deleted: Whether to include soft-deleted documents.
         :param filters: Field-based equality filters; keys with None values are ignored.
-        :param sort: List of (field, SortOrder) tuples; defaults to _id ASC.
+        :param search: Field-based string searches; values are patterns or exact.
+        :param exact_match: Determines if 'search' uses exact or pattern matching.
+        :param sort: List of (field, SortOrder) pairs; defaults to _id ASC.
         :returns: List of document instances.
         """
         # Build base filter dict
         query_filter: Dict[str, Any] = {}
         if not include_deleted:
             query_filter['is_deleted'] = False
-        # Merge non-None filters
+        # Merge equality filters
         if filters:
             for field, value in filters.items():
-                if value is not None:
+                if value is None:
+                    continue
+                if not isinstance(value, str):
                     query_filter[field] = value
+                else:
+                    # exact match, case-insensitive
+                    query_filter[field] = {"$regex": f"^{value}$", "$options": "i"}
+        # Add search criteria
+        if search:
+            for field, term in search.items():
+                if term is None:
+                    continue
+                if exact_match:
+                    # exact match, case-insensitive
+                    query_filter[field] = {"$regex": f"^{term}$", "$options": "i"}
+                else:
+                    # substring or regex search, case-insensitive
+                    query_filter[field] = {"$regex": term, "$options": "i"}
 
         # Determine sort parameters: use SortOrder enum values
         sort_orders = sort or [("_id", SortOrder.ASC)]
