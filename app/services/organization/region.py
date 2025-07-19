@@ -1,12 +1,8 @@
 from typing import List, Optional, Tuple, Any, Dict
-from beanie import PydanticObjectId
+
 from app.models.organization.region import Region
 from app.schemas.organization.location import RegionCreate, RegionUpdate
-from app.services.exceptions import (
-     AlreadyExistsError, ValidationError
-)
 from app.services.crud_services import CRUD
-
 from app.constants.sort_order import SortOrder
 
 crud = CRUD(Region)
@@ -45,63 +41,32 @@ async def list_regions(
 
 
 async def update_region(region_id: str, data: RegionUpdate) -> Region:
-    """Update fields on an existing region."""
-    region = await get_region(region_id)
-    update_data = data.model_dump(exclude_unset=True)
-    # Name validations
-    if 'name' in update_data or 'code' in update_data:
-        if not update_data['name'].strip():
-            raise ValidationError("Region name must not be empty")
-        
-        if 'name' in update_data or 'code' in update_data:
-            # Check for conflicts in name OR code
-            existing = await Region.find_one({
-                "$or": [
-                    {"name": update_data.get('name'), "_id": {"$ne": region.id}},
-                    {"code": update_data.get('code'), "_id": {"$ne": region.id}},
-                ]
-            })
-            if existing:
-                conflict_field = "name" if existing.name == update_data.get('name') else "code"
-                raise AlreadyExistsError(
-                    f"Region {conflict_field} '{update_data[conflict_field]}' already exists"
-                )
-        
-    for field, val in update_data.items():
-        setattr(region, field, val)
-    await region.replace()
-    return region
+    res = await crud.update(region_id, data, unique_fields=["name", "code"])
+    return res
+
+async def soft_delete_region(region_id: str) -> None:
+    """Soft-delete a region."""
+    res = await crud.update_flags(region_id, fields=[("is_deleted", True), ("is_active", False)])
+    return res
 
 async def delete_region(region_id: str) -> None:
-    """Soft-delete a region."""
-    region = await get_region(region_id)
-    region.is_active = False
-    region.is_deleted = True
-    await region.replace()
+    """hard-delete a region."""
+    res = await crud.delete(region_id)
+    return res
 
 async def restore_region(region_id: str) -> Region:
     """Restore a previously soft-deleted region."""
-    region = await get_region(region_id, include_flag=True)
-    if not region.is_deleted:
-        raise ValidationError(f"Region '{region_id}' is not deleted")
-    region.is_deleted = False
-    region.is_active = True
-    await region.replace()
-    return region
+    res = await crud.update_flags(region_id, fields=[("is_deleted", False), ("is_active", True)])
+    return res
 
 
 async def disable_region(region_id: str) -> None:
     """Deactivate a region."""
-    region = await get_region(region_id)
-    region.is_active = False
-    await region.replace()
+    res = await crud.update_flags(region_id, [("is_active", False)])
+    return res
 
 
 async def activate_region(region_id: str) -> Region:
-    """Restore a previously soft-deleted region."""
-    region = await get_region(region_id, include_flag=True)
-    if region.is_active:
-        raise ValidationError(f"Region '{region_id}' is not disabled")
-    region.is_active = True
-    await region.replace()
-    return region
+    """Restore a previously deactivated region."""
+    res = await crud.update_flags(region_id, [("is_active", True)])
+    return res

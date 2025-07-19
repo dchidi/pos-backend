@@ -11,6 +11,7 @@ from app.services.organization.region import (
     get_region,
     list_regions,
     update_region,
+    soft_delete_region,
     delete_region,
     restore_region,
     disable_region,
@@ -124,11 +125,20 @@ async def update_region_route(
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Soft-delete a region",
 )
+async def soft_delete_region_route(
+    region_id: str = Path(..., description="Brand ObjectId"),
+):
+    await soft_delete_region(region_id)
+
+@router.delete(
+    "/{region_id}/permanently",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Hard-delete a region and it cannot be restored",
+)
 async def delete_region_route(
     region_id: str = Path(..., description="Brand ObjectId"),
 ):
     await delete_region(region_id)
-
 
 @router.patch(
     "/{region_id}/restore",

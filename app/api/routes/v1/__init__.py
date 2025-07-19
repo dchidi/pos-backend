@@ -34,7 +34,7 @@ api_router.include_router(user_router, prefix="/warehouse", tags=["Warehouse"])
 # api_router.include_router(role_router, prefix="/roles", tags=["Role Management"])
 
 # organization
-api_router.include_router(country.router, prefix="/country", tags=["Organization"])
-api_router.include_router(region.router, prefix="/region", tags=["Organization"])
-api_router.include_router(area.router, prefix="/area", tags=["Organization"])
-api_router.include_router(state.router, prefix="/state", tags=["Organization"])
+api_router.include_router(country.router, prefix="/country", tags=["Organization/Country"])
+api_router.include_router(region.router, prefix="/region", tags=["Organization/Region"])
+api_router.include_router(area.router, prefix="/area", tags=["Organization/Area"])
+api_router.include_router(state.router, prefix="/state", tags=["Organization/State"])
