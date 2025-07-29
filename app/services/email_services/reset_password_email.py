@@ -1,22 +1,22 @@
 from email.message import EmailMessage
 from aiosmtplib import SMTP
 from app.core.settings import settings 
-from app.utils.template_engine import template_env
+from app.utils.template_path import template_env
 
 
-async def send_otp_email(to_email: str, otp: str):
+async def send_reset_password_email(to_email: str, verification_url: str):
     msg = EmailMessage()
-    msg["Subject"] = f"{settings.APP_NAME} Login Verification Code"
+    msg["Subject"] = f"{settings.APP_NAME} Reset Your Password"
     msg["From"] = settings.FROM_EMAIL
     msg["To"] = to_email
 
 
      # Render HTML with Jinja2
-    template = template_env.get_template("otp_email.html")
+    template = template_env.get_template("reset_password_email.html")
     html_content = template.render(
-        otp=otp, 
+        verification_url=verification_url, 
         app_name=settings.APP_NAME, 
-        expiry_time=settings.OTP_EXPIRY_TIME_MINUTES
+        expiry_time=settings.ACCOUNT_VERIFICATION_EXPIRY_TIME_HOURS
     )
     msg.add_alternative(html_content, subtype="html")
 
@@ -31,5 +31,5 @@ async def send_otp_email(to_email: str, otp: str):
         await smtp.send_message(msg)
         await smtp.quit()
     except Exception as e:
-        print(f"[Email Error] Failed to send OTP to {to_email}: {e}")
+        print(f"[Email Error] Failed to send reset password to {to_email}: {e}")
         raise RuntimeError("Failed to send verification email")

@@ -17,7 +17,6 @@ from app.services.organization.region import (
     disable_region,
     activate_region
 )
-# from app.api.routes.v1.handle_errors import handle_service_errors
 
 
 router = APIRouter()
@@ -42,6 +41,7 @@ async def create_region_route(payload: RegionCreate):
     summary="List regions with optional filters and sorting",
 )
 async def get_regions_route(
+    company_id: str = Query(None, description="Company ObjectId"),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
     include_deleted: bool = Query(
@@ -84,6 +84,7 @@ async def get_regions_route(
         search["code"] = search_code
 
     return await list_regions(
+        company_id = company_id,
         skip=skip,
         limit=limit,
         include_deleted=include_deleted,
@@ -101,11 +102,12 @@ async def get_regions_route(
 )
 async def get_region_route(
     region_id: str = Path(..., description="Brand ObjectId"),
+    company_id: str = Query(None, description="Company ObjectId"),
     include_deleted: bool = Query(
         False, description="Include if the region is soft-deleted"
     ),
 ):
-    return await get_region(region_id, include_deleted)
+    return await get_region(region_id, company_id, include_deleted)
 
 
 @router.put(
@@ -114,10 +116,11 @@ async def get_region_route(
     summary="Update an existing region",
 )
 async def update_region_route(
-    region_id: str = Path(..., description="Brand ObjectId"),
+    region_id: str = Path(..., description="Brand ObjectId"),    
+    company_id: str = Query(None, description="Company ObjectId"),
     payload: RegionUpdate = ...,
 ):
-    return await update_region(region_id, payload)
+    return await update_region(region_id, company_id, payload)
 
 
 @router.delete(
@@ -127,8 +130,9 @@ async def update_region_route(
 )
 async def soft_delete_region_route(
     region_id: str = Path(..., description="Brand ObjectId"),
+    company_id: str = Query(None, description="Company ObjectId"),
 ):
-    await soft_delete_region(region_id)
+    await soft_delete_region(region_id, company_id)
 
 @router.delete(
     "/{region_id}/permanently",
@@ -137,8 +141,9 @@ async def soft_delete_region_route(
 )
 async def delete_region_route(
     region_id: str = Path(..., description="Brand ObjectId"),
+    company_id: str = Query(None, description="Company ObjectId"),
 ):
-    await delete_region(region_id)
+    await delete_region(region_id, company_id)
 
 @router.patch(
     "/{region_id}/restore",
@@ -147,8 +152,9 @@ async def delete_region_route(
 )
 async def restore_region_route(
     region_id: str = Path(..., description="Brand ObjectId"),
+    company_id: str = Query(None, description="Company ObjectId"),
 ):
-    return await restore_region(region_id)
+    return await restore_region(region_id, company_id)
 
 
 @router.patch(
@@ -158,8 +164,9 @@ async def restore_region_route(
 )
 async def disable_region_route(
     region_id: str = Path(..., description="Brand ObjectId"),
+    company_id: str = Query(None, description="Company ObjectId"),
 ):
-    await disable_region(region_id)
+    await disable_region(region_id, company_id)
 
 
 @router.patch(
@@ -169,5 +176,6 @@ async def disable_region_route(
 )
 async def restore_region_route(
     region_id: str = Path(..., description="Brand ObjectId"),
+    company_id: str = Query(None, description="Company ObjectId"),
 ):
-    return await activate_region(region_id)
+    return await activate_region(region_id, company_id)

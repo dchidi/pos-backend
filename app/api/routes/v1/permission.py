@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, status, Depends
 from app.utils.permission_filter import filter_super_admin
 from app.services.exceptions import *
 from app.constants.permissions import PERMISSION_GROUPS
-from app.core.auth import require_permissions
+from app.services.auth.dependencies import require_permissions
 
 router = APIRouter()
 

@@ -49,13 +49,14 @@ class CountryResponse(LocationBase, BaseResponse):
     created_at: datetime
     updated_at: datetime
     is_active: bool
-    is_deleted: bool
+    is_deleted: bool    
+    company_id: Optional[PyObjectId] = Field(None)
 
 class RegionResponse(CountryResponse):
-    country_id: Optional[PyObjectId] = Field(None, example="64f95b0c2ab5ec9e0b22c77f")
+    country_id: Optional[PyObjectId] = Field(None)
     
 class AreaResponse(RegionResponse):
-    region_id: Optional[PyObjectId] = Field(None, example="64f95b0c2ab5ec9e0b22c77f")
+    region_id: Optional[PyObjectId] = Field(None)
 
 class StateResponse(AreaResponse):    
-    area_id: Optional[PyObjectId] = Field(None, example="64f95b0c2ab5ec9e0b22c77f")
+    area_id: Optional[PyObjectId] = Field(None)

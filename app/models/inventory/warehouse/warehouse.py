@@ -30,15 +30,7 @@ class Warehouse(Document, TimeStampMixin):
         description="Total storage capacity in cubic meters. Physical warehouse ONLY"
     )
 
-    created_by: Optional[str] = Field(
-        None,
-        description="User ID who created this record"
-    )
-    updated_by: Optional[str] = Field(
-        None,
-        description="User ID who last updated this record"
-    )
-
+   
     class Settings:
         name = "warehouses"
         indexes = [

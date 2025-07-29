@@ -14,44 +14,47 @@ PERMISSION_GROUPS = [
     },
     {
         "group": "user_management",
-        "name": "User & Role Management",
+        "name": "User Management",
         "description": "Manage system users and their roles",
         "permissions": [
-            {
-                "value": "can_create_user",
-                "label": "Create Users",
-                "description": "Register new user accounts in the system"
-            },
-            {
-                "value": "can_edit_user",
-                "label": "Edit Users",
-                "description": "Modify existing user profiles and settings"
-            },
-            {
-                "value": "can_delete_user",
-                "label": "Delete Users",
-                "description": "Permanently remove user accounts"
-            },
-            {
-                "value": "can_view_users",
-                "label": "View Users",
-                "description": "See list of all registered users"
-            },
-            {
-                "value": "can_assign_roles",
-                "label": "Assign Roles",
-                "description": "Change role assignments for users"
-            },
-            {
-                "value": "can_reset_passwords",
-                "label": "Reset Passwords",
-                "description": "Reset passwords for any user account"
-            },
-            {
-                "value": "can_enable_2fa",
-                "label": "Manage 2FA",
-                "description": "Enable/disable two-factor authentication"
-            }
+            { "value": "*", "label": "All Permissions", "description": "Can perform any action on users" },
+            { "value": "user:create", "label": "Create Users", "description": "Register new user accounts" },
+            { "value": "user:edit", "label": "Edit Users", "description": "Modify user profiles" },
+            { "value": "user:view", "label": "View Users", "description": "See list of users" },
+            { "value": "user:view_profile", "label": "View User Profile", "description": "View full profile or audit" },
+            { "value": "user:delete", "label": "Delete Users", "description": "Temporarily remove user accounts" },
+            { "value": "user:hard_delete", "label": "Permanently Delete Users", "description": "Irreversibly remove accounts" },
+            { "value": "user:reset_password", "label": "Reset Passwords", "description": "Reset user passwords" },
+            { "value": "user:assign_roles", "label": "Assign Roles", "description": "Manage role assignments" },
+            { "value": "user:deactivate", "label": "Deactivate User", "description": "Temporarily disable a user" },
+            { "value": "user:activate", "label": "Activate User", "description": "Re-enable a previously disabled user" },
+            { "value": "user:invite", "label": "Invite User", "description": "Send invitation email to new user" },
+            { "value": "user:resend_invite", "label": "Resend Invite", "description": "Resend pending invitation email" },
+            { "value": "user:export", "label": "Export Users", "description": "Export user list to CSV or PDF" },
+            { "value": "user:impersonate", "label": "Impersonate User", "description": "Log in as another user for testing or support" },
+            { "value": "user:bulk_edit", "label": "Bulk Edit Users", "description": "Modify multiple users at once" },
+            { "value": "user:bulk_delete", "label": "Bulk Delete Users", "description": "Delete multiple users at once" },
+            { "value": "user:view_activity", "label": "View User Activity", "description": "Access logs of user actions" },
+            { "value": "user:manage_sessions", "label": "Manage Sessions", "description": "View or terminate active user sessions" },
+            { "value": "user:manage_permissions", "label": "Manage Permissions", "description": "Edit individual user permissions" },
+            { "value": "user:view_statistics", "label": "View User Statistics", "description": "Access analytics on user behavior" }
+        ]
+    },
+    {
+        "group": "role_management",
+        "name": "Role Management",
+        "description": "Define and manage roles and their associated permissions",
+        "permissions": [
+            { "value": "*", "label": "All Role Permissions", "description": "Can perform any action related to roles" },
+            { "value": "role:create", "label": "Create Roles", "description": "Create new roles with specific permission sets" },
+            { "value": "role:edit", "label": "Edit Roles", "description": "Change role name or update assigned permissions" },
+            { "value": "role:view", "label": "View Roles", "description": "List all available roles" },
+            { "value": "role:view_detail", "label": "View Role Details", "description": "Inspect role configuration and permission mappings" },
+            { "value": "role:delete", "label": "Delete Roles", "description": "Soft delete a role from the system" },
+            { "value": "role:hard_delete", "label": "Permanently Delete Roles", "description": "Remove a role and its history completely" },
+            { "value": "role:duplicate", "label": "Duplicate Roles", "description": "Create a new role based on an existing one" },
+            { "value": "role:export", "label": "Export Roles", "description": "Download all role definitions as CSV or JSON" },
+            { "value": "role:audit", "label": "Audit Role Changes", "description": "Review change logs for roles and permission edits" }
         ]
     },
     {

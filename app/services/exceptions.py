@@ -24,9 +24,14 @@ class OTPExpired(Exception):
 class InvalidOTP(Exception):
     pass
 
-class OTPInvalid(Exception):
+class OTPNotFound(Exception):
     pass
 
+class UnAuthorized(Exception):
+    pass
+
+class ResetPassword(Exception):
+    pass
 
 # Delete below later
 class UserNotFound(Exception):
@@ -38,7 +43,4 @@ class EmailAlreadyExists(Exception):
 class InvalidPermissionSet(ServiceError):
     pass
 class InvalidCredentials(ServiceError):
-    pass
-class OTPNotFound(ServiceError):
-    """Raised when an entity is not found in database"""
     pass

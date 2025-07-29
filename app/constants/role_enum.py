@@ -5,3 +5,8 @@ from enum import Enum
 class UserRole(str, Enum):
     SUPER_ADMIN = "super_admin"
     CASHIER = "cashier"
+
+class RoleStatus(str, Enum):
+    ACTIVE = "active"
+    INACTIVE = "inactive"
+    ARCHIVED = "archived"

@@ -1,8 +1,10 @@
 from motor.motor_asyncio import AsyncIOMotorClient
 from beanie import init_beanie
-from app.core.settings import settings
 import logging
 import traceback
+
+from app.core.settings import settings
+
 
 from app.models import MODELS  # Import here to avoid circular imports
 # Configure logging
@@ -49,6 +51,7 @@ class MongoDB:
                 document_models=MODELS,
                 allow_index_dropping=False
             )
+            
 
             logger.info("Beanie initialised successfully")
         except Exception as e:

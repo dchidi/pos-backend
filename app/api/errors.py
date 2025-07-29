@@ -2,13 +2,9 @@
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from app.services.exceptions import (
-    NotFoundError,
-    AlreadyExistsError,
-    ValidationError,
-    ServiceError,
-    OTPAttemptsExceeded,
-    OTPExpired,
-    OTPInvalid,
+    NotFoundError, AlreadyExistsError, ValidationError,
+    ServiceError, OTPAttemptsExceeded, OTPExpired,
+    InvalidOTP, UnAuthorized, ResetPassword
 )
 
 def register_exception_handlers(app: FastAPI):
@@ -32,8 +28,8 @@ def register_exception_handlers(app: FastAPI):
     async def otp_expired_handler(request: Request, exc: OTPExpired):
         return JSONResponse({"detail": str(exc)}, status_code=status.HTTP_410_GONE)
 
-    @app.exception_handler(OTPInvalid)
-    async def otp_invalid_handler(request: Request, exc: OTPInvalid):
+    @app.exception_handler(InvalidOTP)
+    async def invalid_otp_handler(request: Request, exc: InvalidOTP):
         return JSONResponse({"detail": str(exc)}, status_code=status.HTTP_403_FORBIDDEN)
 
     @app.exception_handler(ServiceError)
@@ -41,7 +37,16 @@ def register_exception_handlers(app: FastAPI):
         # fallback for any other ServiceError
         return JSONResponse({"detail": str(exc) or "Service operation failed"}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+    @app.exception_handler(UnAuthorized)
+    async def unauthorized_error_handler(request: Request, exc: UnAuthorized):
+        # fallback for any other ServiceError
+        return JSONResponse({"detail": str(exc) or "Invalid or expired token"}, status_code=status.HTTP_401_UNAUTHORIZED)
+
     @app.exception_handler(Exception)
     async def generic_exception_handler(request: Request, exc: Exception):
         # log.exc_info() here if you want
-        return JSONResponse({"detail": "An unexpected error occurred"}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return JSONResponse({"detail": f"An unexpected error occurred {str(exc)}"}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @app.exception_handler(ResetPassword)
+    async def reset_password_handler(request: Request, exc: ResetPassword):
+        return JSONResponse({"detail": str(exc)}, status_code=status.HTTP_202_ACCEPTED)
