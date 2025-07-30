@@ -21,6 +21,7 @@ class PlanBase(BaseModel):
     features: List[str] = Field(default_factory=list, description="Features included in the plan")
     is_trial_available: bool = Field(default=False, description="Is trial available?")
     trial_period_days: Optional[int] = Field(None, description="Length of the trial period, if available")
+    number_of_users: int = Field(..., gt=0, description="Number of users allowed on the plan")
 
 
 class PlanCreate(PlanBase):
