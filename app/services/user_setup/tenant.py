@@ -1,6 +1,6 @@
 from typing import List, Optional, Tuple, Any, Dict
 from beanie import PydanticObjectId
-from app.models.organization.tenant import Tenant
+from app.models.user_setup.tenant import Tenant
 from app.schemas.organization .tenant import TenantCreate, TenantUpdate, TenantResponse
 from app.services.crud_services import CRUD
 from app.constants.sort_order import SortOrder

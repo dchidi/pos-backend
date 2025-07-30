@@ -8,6 +8,9 @@ to maintain clean separation and versioning.
 
 from fastapi import APIRouter
 
+# User setup
+from app.api.routes.v1.user_setup.plan import router as plan_router
+
 # Import individual routers
 from app.api.routes.v1.inventory.brand import router as brand_router
 from app.api.routes.v1.user import router as user_router
@@ -21,9 +24,12 @@ from app.api.routes.v1.auth import router as auth_router
 from app.api.routes.v1.permission import router as permission_router
 from app.api.routes.v1.role import router as role_router
 
-from app.api.routes.v1.organization.tenant import router as tenant_router
+from app.api.routes.v1.user_setup.tenant import router as tenant_router
 
 api_router = APIRouter()
+
+# User setup
+api_router.include_router(plan_router, prefix="/plans", tags=["User Setup/Plan"])
 
 # Authentication & Authentication
 api_router.include_router(auth_router, prefix="/auth", tags=["Authentication"])

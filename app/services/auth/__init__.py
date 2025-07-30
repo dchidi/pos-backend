@@ -27,5 +27,6 @@ from app.services.auth.dependencies import (
     require_permission,
     oauth2_scheme,
     require_permissions,
-    require_roles_or_permissions
+    require_roles_or_permissions,
+    get_current_user_id
 )

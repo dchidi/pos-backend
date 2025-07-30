@@ -22,7 +22,12 @@ async def get_role(
     include_deleted: bool = False,
     include_deactivated: bool = False
 ) -> RoleResponse:
-    res = await crud.get_by_id(role_id, company_id, include_deleted, include_deactivated)
+    res = await crud.get_by_id(
+        doc_id=role_id, 
+        company_id=company_id, 
+        include_deleted=include_deleted, 
+        include_deactivated=include_deactivated
+    )
     return res
 
 
@@ -38,11 +43,11 @@ async def list_roles(
     exact_match: Optional[bool] = False
 ) -> List[RoleResponse]:
     res = await crud.list(
-        company_id,
-        skip,
-        limit,
-        include_deleted,
-        include_deactivated,
+        company_id=company_id,
+        skip=skip,
+        limit=limit,
+        include_deleted=include_deleted,
+        include_deactivated=include_deactivated,
         filters=filters,
         sort=sort_order,
         search=search,
@@ -56,7 +61,12 @@ async def update_role(
     data: RoleUpdate,     
     company_id:PydanticObjectId
 ) -> Role:
-    res = await crud.update(role_id, company_id, data, unique_fields=["name"])
+    res = await crud.update(
+        doc_id=role_id, 
+        company_id=company_id, 
+        payload=data, 
+        unique_fields=["name"]
+    )
     return res
 
 async def soft_delete_role(
@@ -64,7 +74,11 @@ async def soft_delete_role(
     company_id:PydanticObjectId
 ) -> None:
     """Soft-delete a role."""
-    res = await crud.update_flags(role_id, company_id,  fields=[("is_deleted", True), ("is_active", False)])
+    res = await crud.update_flags(
+        doc_id=role_id, 
+        company_id=company_id,  
+        fields=[("is_deleted", True), ("is_active", False)]
+    )
     return res
 
 async def delete_role(
@@ -72,7 +86,11 @@ async def delete_role(
     company_id:PydanticObjectId
 ) -> None:
     """hard-delete a role."""
-    res = await crud.delete(role_id, company_id, hard_delete= True)
+    res = await crud.delete(
+        doc_id=role_id, 
+        company_id=company_id, 
+        hard_delete= True
+    )
     return res
 
 async def restore_role(
@@ -80,7 +98,11 @@ async def restore_role(
     company_id:PydanticObjectId
 ) -> Role:
     """Restore a previously soft-deleted role."""
-    res = await crud.update_flags(role_id, company_id, fields=[("is_deleted", False), ("is_active", True)])
+    res = await crud.update_flags(
+        doc_id=role_id, 
+        company_id=company_id, 
+        fields=[("is_deleted", False), ("is_active", True)]
+    )
     return res
 
 
@@ -89,7 +111,11 @@ async def disable_role(
     company_id:PydanticObjectId
 ) -> None:
     """Deactivate a role."""
-    res = await crud.update_flags(role_id, company_id, [("is_active", False)])
+    res = await crud.update_flags(
+        doc_id=role_id, 
+        company_id=company_id, 
+        fields=[("is_active", False)]
+    )
     return res
 
 
@@ -98,5 +124,9 @@ async def activate_role(
     company_id:PydanticObjectId
 ) -> Role:
     """Restore a previously deactivated role."""
-    res = await crud.update_flags(role_id, company_id, [("is_active", True)])
+    res = await crud.update_flags(
+        doc_id=role_id, 
+        company_id=company_id, 
+        fields=[("is_active", True)]
+    )
     return res

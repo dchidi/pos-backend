@@ -6,7 +6,7 @@ from app.utils.parse_sort_clause import parse_sort
 from app.schemas.organization.tenant import (
     TenantCreate, TenantUpdate, TenantResponse
 )
-from app.services.organization.tenant import (
+from app.services.user_setup.tenant import (
     create_tenant,
     get_tenant,
     list_tenants,

@@ -5,7 +5,7 @@ from jose import JWTError
 
 from app.models.user_setup.user import User
 from app.models.blacklisted_token import BlacklistedToken 
-from app.models.organization.tenant import Tenant
+from app.models.user_setup.tenant import Tenant
 
 
 from app.services.exceptions import  ValidationError, UnAuthorized, NotFoundError
@@ -38,14 +38,24 @@ async def get_current_company(token: str = Depends(oauth2_scheme)) -> PydanticOb
 
     return oid
 
+async def get_current_user_id(token: str = Depends(oauth2_scheme)) -> PydanticObjectId:
+    try:
+        payload = decode_token(token)
+    except JWTError:
+        raise ValidationError("Invalid token")
+    except Exception:
+        raise
     
+    user_id = payload.get("sub")
+    if not user_id:
+        raise ValidationError("Invalid token")
+    
+    try:
+        oid = PydanticObjectId(user_id)
+    except Exception:
+        raise ValidationError("Invalid user identifier")
 
-def require_permission(permission: str):
-    async def dependency(current_user: User = Depends(get_current_user)):
-        if permission not in current_user.permissions:
-            raise UnAuthorized(f"Missing permission: {permission}")
-        return current_user
-    return dependency
+    return oid 
 
 async def get_current_user(token: str = Depends(oauth2_scheme)) -> User:
      # 1. Check if token is blacklisted
@@ -80,6 +90,13 @@ def require_roles_or_permissions(*allowed: str):
         return current_user
     return checker
 
+
+def require_permission(permission: str):
+    async def dependency(current_user: User = Depends(get_current_user)):
+        if permission not in current_user.permissions:
+            raise UnAuthorized(f"Missing permission: {permission}")
+        return current_user
+    return dependency
 
 #Double check with your current implementation
 # def require_roles(*allowed_roles: str):
