@@ -55,7 +55,7 @@ class CRUD(Generic[ModelType]):
 
         if not include_deleted:
             query_filter["is_deleted"] = False
-        
+
         if not include_deactivated:
             query_filter["is_active"] = True
 
@@ -64,8 +64,8 @@ class CRUD(Generic[ModelType]):
             for field, value in filters.items():
                 if value is not None:
                     query_filter[field] = (
-                        {"$regex": f"^{value}$", "$options": "i"} 
-                        if isinstance(value, str) 
+                        {"$regex": f"^{value}$", "$options": "i"}
+                        if isinstance(value, str)
                         else value
                     )
 
@@ -114,7 +114,7 @@ class CRUD(Generic[ModelType]):
         self,
         doc_id: Union[PydanticObjectId, str],
         company_id: Union[PydanticObjectId, str] = None,
-        include_deleted: bool = False,        
+        include_deleted: bool = False,
         include_deactivated: bool = False,
         session=None,
         use_company_id: bool = True  # Use the flag to decide if company_id is included

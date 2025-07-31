@@ -3,7 +3,8 @@ from typing import Optional, List, Dict
 from datetime import datetime
 from app.schemas.base import BaseResponse
 from app.schemas import PyObjectId
-from app.constants.tenants_enum import PaymentMethod, TenantStatus, TenantTier
+from app.constants.status_enum import TenantStatus, TenantTier
+from app.constants.payment_method_enum import PaymentMethod
 
 
 class AddressSchema(BaseModel):
@@ -21,7 +22,13 @@ class BillingInfoSchema(BaseModel):
     payment_method: PaymentMethod = Field(default=PaymentMethod.CREDIT_CARD)
     billing_email: EmailStr
     billing_address: Optional[AddressSchema] = None
-    payment_terms_days: int = Field(default=30, ge=0)
+
+    billing_start: Optional[datetime] = Field(default=None)
+    billing_end: Optional[datetime] = Field(default=None)
+    subscription_duration_days: Optional[int] = Field(None, ge=1)
+    payment_terms_days: int = Field(default=10, ge=0)
+    due_date: Optional[datetime] = Field(default=None)
+    notes: Optional[str] = None
 
 
 class TenantSettingsSchema(BaseModel):
@@ -42,15 +49,21 @@ class TenantBase(BaseModel):
     logo_url: Optional[AnyUrl] = None
     phone_number: Optional[str] = Field(None, max_length=20)
     email: Optional[EmailStr] = None
+
     tier: TenantTier = Field(default=TenantTier.BASIC)
     status: TenantStatus = Field(default=TenantStatus.ACTIVE)
     settings: TenantSettingsSchema = Field(default_factory=TenantSettingsSchema)
+
+    plan_id: PyObjectId = Field(..., description="Reference to the current plan (required for all tenants)")
+
     addresses: List[AddressSchema] = Field(default_factory=list)
     billing_info: Optional[BillingInfoSchema] = None
+
     trial_start_date: Optional[datetime] = None
     trial_end_date: Optional[datetime] = None
     subscription_start_date: Optional[datetime] = None
     subscription_end_date: Optional[datetime] = None
+
     tags: List[str] = Field(default_factory=list)
     custom_fields: Dict[str, str] = Field(default_factory=dict)
 
@@ -69,15 +82,21 @@ class TenantUpdate(BaseModel):
     logo_url: Optional[AnyUrl] = None
     phone_number: Optional[str] = Field(None, max_length=20)
     email: Optional[EmailStr] = None
+
     tier: Optional[TenantTier] = None
     status: Optional[TenantStatus] = None
     settings: Optional[TenantSettingsSchema] = None
+
+    plan_id: Optional[PyObjectId] = None
+
     addresses: Optional[List[AddressSchema]] = None
     billing_info: Optional[BillingInfoSchema] = None
+
     trial_start_date: Optional[datetime] = None
     trial_end_date: Optional[datetime] = None
     subscription_start_date: Optional[datetime] = None
     subscription_end_date: Optional[datetime] = None
+
     tags: Optional[List[str]] = None
     custom_fields: Optional[Dict[str, str]] = None
 

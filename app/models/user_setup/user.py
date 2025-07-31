@@ -9,6 +9,7 @@ from app.models.base import TimeStampMixin
 
 RoleStr = Annotated[str, Field(min_length=2, max_length=64)]
 
+
 class User(Document, TimeStampMixin):    
     hashed_password: str = Field(repr=False) # never show in repr / JSON
 

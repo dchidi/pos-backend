@@ -1,7 +1,8 @@
-from pydantic import BaseModel, Field, field_validator, ConfigDict
+from pydantic import BaseModel, Field, field_validator
 from datetime import datetime, timezone
 from typing import Optional
 from beanie import PydanticObjectId, before_event, Insert, Replace, Update
+
 
 class TimeStampMixin(BaseModel):
     """
@@ -9,7 +10,7 @@ class TimeStampMixin(BaseModel):
     - All timestamps stored in UTC
     - Frontend handles local time conversion
     """
-    
+
     # Core timestamp fields (UTC only)
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),

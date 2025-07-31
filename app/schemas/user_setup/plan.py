@@ -2,7 +2,7 @@ from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import datetime
 
-from app.constants.tenants_enum import TenantTier
+from app.constants.status_enum import TenantTier
 from app.constants.currency_enum import Currency
 from app.schemas.base import BaseResponse
 from app.schemas import PyObjectId

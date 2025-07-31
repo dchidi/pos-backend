@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Query, Path, status, Depends
 from typing import List, Optional, Dict, Any
-from beanie import PydanticObjectId
 from app.utils.parse_sort_clause import parse_sort
 
 from app.schemas.user_setup.plan import (

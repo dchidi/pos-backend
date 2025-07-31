@@ -563,4 +563,3 @@ PERMISSION_GROUPS = [
         ]
     }
 ]
-    

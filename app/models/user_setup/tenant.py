@@ -1,44 +1,18 @@
 import re
-from pydantic import BaseModel, Field, field_validator, EmailStr, HttpUrl
 from datetime import datetime, timezone, timedelta
 from typing import Optional, List, Dict, Annotated
-from beanie import (
-  Document, before_event, Insert, Indexed
-)
-from app.models.base import TimeStampMixin
 
-from app.constants.tenants_enum import (
-    PaymentMethod, TenantStatus, TenantTier
-)
-
+from beanie import Document, before_event, Insert, Indexed, PydanticObjectId
+from pydantic import Field, field_validator, EmailStr, HttpUrl
 from pymongo import ASCENDING, IndexModel
 
-class Address(BaseModel):
-    """Physical address structure"""
-    street: Optional[str] = Field(None, max_length=100)
-    city: Optional[str] = Field(None, max_length=50)
-    state: Optional[str] = Field(None, max_length=50)
-    postal_code: Optional[str] = Field(None, max_length=20)
-    country: Optional[str] = Field(None, max_length=100)    
-    is_primary: bool = Field(default=True)
+from app.models.base import TimeStampMixin
+from app.constants.status_enum import TenantStatus, TenantTier
 
-class BillingInfo(BaseModel):
-    """Financial billing information"""
-    company_name: str = Field(..., max_length=100)
-    tax_id: Optional[str] = Field(None, max_length=50, description="VAT, GST, or other tax ID")
-    payment_method: PaymentMethod = Field(default=PaymentMethod.CREDIT_CARD)
-    billing_email: EmailStr = Field(..., description="Email for invoices and billing communications")
-    billing_address: Optional[Address] = Field(None)
-    payment_terms_days: int = Field(default=30, ge=0, description="Net payment terms in days")
+from app.schemas.user_setup.tenant import (
+    AddressSchema, BillingInfoSchema, TenantSettingsSchema
+)
 
-class TenantSettings(BaseModel):
-    """Configurable tenant-specific settings"""
-    timezone: str = Field(default="UTC", description="IANA timezone string")
-    locale: str = Field(default="en-US", description="Default locale/language")
-    currency: str = Field(default="USD", min_length=3, max_length=3)
-    allow_multiple_locations: bool = Field(default=False)
-    max_users: int = Field(default=5, ge=1)
-    receipt_footer: Optional[str] = Field(None, description="Custom text for POS receipts")
 
 class Tenant(Document, TimeStampMixin):
     """Primary tenant/organization model for multi-tenant POS system"""
@@ -51,13 +25,9 @@ class Tenant(Document, TimeStampMixin):
             collation={"locale": "en", "strength": 2},
         ),
     ] = Field(..., min_length=2, max_length=100, description="Legal business name")
-    
-    display_name: Optional[str] = Field(
-        None, 
-        max_length=100,
-        description="Optional display name different from legal name"
-    )
-    
+
+    display_name: Optional[str] = Field(None, max_length=100, description="Display name different from legal name")
+
     # Business information
     description: Optional[str] = Field(None, max_length=500)
     industry: Optional[str] = Field(None, max_length=50)
@@ -65,33 +35,28 @@ class Tenant(Document, TimeStampMixin):
     logo_url: Optional[HttpUrl] = None
     phone_number: Optional[str] = Field(None, max_length=20)
     email: Optional[EmailStr] = None
-    
+
     # Tenant configuration
     tier: TenantTier = Field(default=TenantTier.BASIC)
     status: TenantStatus = Field(default=TenantStatus.ACTIVE)
-    settings: TenantSettings = Field(default_factory=TenantSettings)
-    
+    settings: TenantSettingsSchema = Field(default_factory=TenantSettingsSchema)
+    plan_id: PydanticObjectId = Field(..., description="Reference to the tenant's current plan")
+
     # Business locations
-    addresses: List[Address] = Field(default_factory=list)
-    
+    addresses: List[AddressSchema] = Field(default_factory=list)
+
     # Financial information
-    billing_info: Optional[BillingInfo] = None
-    
+    billing_info: Optional[BillingInfoSchema] = None
+
     # Subscription dates
     trial_start_date: Optional[datetime] = None
     trial_end_date: Optional[datetime] = None
     subscription_start_date: Optional[datetime] = None
     subscription_end_date: Optional[datetime] = None
-    
+
     # Metadata
-    tags: List[str] = Field(
-        default_factory=list,
-        description="Categories or labels for tenant organization"
-    )
-    custom_fields: Dict[str, str] = Field(
-        default_factory=dict,
-        description="Flexible key-value pairs for tenant-specific data"
-    )
+    tags: List[str] = Field(default_factory=list, description="Categories or labels for tenant organization")
+    custom_fields: Dict[str, str] = Field(default_factory=dict, description="Flexible key-value pairs for tenant-specific data")
 
     class Settings:
         name = "tenants"
@@ -99,11 +64,11 @@ class Tenant(Document, TimeStampMixin):
             IndexModel([("status", ASCENDING)], name="tenant_model_status"),
             IndexModel([("tier", ASCENDING)], name="tenant_model_tier"),
             IndexModel([("created_at", ASCENDING)], name="tenant_model_created_at"),
-            IndexModel([("name", ASCENDING)], name="tenant_model_name"),  # Already indexed via Annotated
-            IndexModel([("status", ASCENDING), ("tier", ASCENDING)], name="tenant_model_status_tier"),  # Compound index
+            IndexModel([("status", ASCENDING), ("tier", ASCENDING)], name="tenant_model_status_tier"),
         ]
 
     model_config = {
+        "from_attributes": True,
         "json_schema_extra": {
             "example": {
                 "name": "Golden Crust Bakery Inc.",
@@ -112,8 +77,9 @@ class Tenant(Document, TimeStampMixin):
                 "industry": "Food & Beverage",
                 "website": "https://goldencrust.example.com",
                 "logo_url": "https://cdn.example.com/tenants/goldencrust/logo.png",
-                "phone": "+1 (555) 123-4567",
+                "phone_number": "+1 (555) 123-4567",
                 "email": "contact@goldencrust.example.com",
+                "plan_id": "60*12",
                 "tier": "pro",
                 "status": "active",
                 "settings": {
@@ -145,7 +111,12 @@ class Tenant(Document, TimeStampMixin):
                         "country": "USA",
                         "is_primary": True
                     },
-                    "payment_terms_days": 30
+                    "billing_start": "2025-08-01T00:00:00Z",
+                    "billing_end": "2025-08-31T00:00:00Z",
+                    "subscription_duration_days": 30,
+                    "payment_terms_days": 10,
+                    "due_date": "2025-08-11T00:00:00Z",
+                    "notes": "Early access invoice"
                 },
                 "trial_start_date": "2025-01-01T00:00:00Z",
                 "trial_end_date": "2025-01-31T00:00:00Z",
@@ -157,8 +128,7 @@ class Tenant(Document, TimeStampMixin):
                     "preferred_contact": "email"
                 }
             }
-        },
-        "from_attributes": True
+        }
     }
 
     @field_validator("phone_number")
@@ -166,14 +136,19 @@ class Tenant(Document, TimeStampMixin):
         if v and not re.match(r"^\+?[1-9]\d{1,14}$", v):
             raise ValueError("Invalid E.164 phone number")
         return v
-    
+
     @before_event([Insert])
     async def set_trial_dates(self):
         """Set trial period dates if not provided"""
+        now = datetime.now(timezone.utc)
         if self.tier == TenantTier.FREE and not self.trial_start_date:
-            self.trial_start_date = datetime.now(timezone.utc)
+            self.trial_start_date = now
             self.trial_end_date = None  # Free tier has no end date
-            
+
         elif self.tier != TenantTier.FREE and not self.trial_start_date:
-            self.trial_start_date = datetime.now(timezone.utc)
-            self.trial_end_date = datetime.now(timezone.utc) + timedelta(days=30)
+            self.trial_start_date = now
+            self.trial_end_date = now + timedelta(days=30)
+
+        # Optional: auto-calculate due_date if not set
+        if self.billing_info and self.billing_info.billing_start and not self.billing_info.due_date:
+            self.billing_info.due_date = self.billing_info.billing_start + timedelta(days=self.billing_info.payment_terms_days)

@@ -24,7 +24,7 @@ class Plan(Document, TimeStampMixin):
     trial_period_days: Optional[int] = Field(None, description="Length of trial period if available")
 
     number_of_users: int = Field(..., gt=0, description="Number of users allowed on the plan")
-    number_of_branch: int = Field(default =1, description="Number of branches a company is allowed to have")
+    number_of_branch: int = Field(default=0, description="Number of branches a company is allowed to have")
 
     class Settings:
         name = "plans"
@@ -33,7 +33,7 @@ class Plan(Document, TimeStampMixin):
             IndexModel([("tier", ASCENDING)], name="plan_model_tier"),
             IndexModel([("price", ASCENDING)], name="plan_model_price"),
         ]
-    
+
     @field_validator('price')
     def check_price(cls, v):
         if v < 0:
