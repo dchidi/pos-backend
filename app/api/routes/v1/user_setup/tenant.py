@@ -3,7 +3,7 @@ from typing import List, Optional, Dict, Any
 from beanie import PydanticObjectId
 from app.utils.parse_sort_clause import parse_sort
 
-from app.schemas.organization.tenant import (
+from app.schemas.user_setup.tenant import (
     TenantCreate, TenantUpdate, TenantResponse
 )
 from app.services.user_setup.tenant import (

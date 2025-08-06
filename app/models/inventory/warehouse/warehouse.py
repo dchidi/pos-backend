@@ -2,7 +2,9 @@ from beanie import Document, PydanticObjectId
 from pydantic import Field, field_validator
 from typing import Optional
 from pymongo import ASCENDING, DESCENDING
-from app.constants.warehouse_enum import WarehouseType
+
+from app.constants import WarehouseType
+
 from app.models.base import TimeStampMixin
 
 

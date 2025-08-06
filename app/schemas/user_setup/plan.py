@@ -1,11 +1,10 @@
 from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import datetime
+from beanie import PydanticObjectId
 
-from app.constants.status_enum import TenantTier
-from app.constants.currency_enum import Currency
+from app.constants import TenantTier, Currency
 from app.schemas.base import BaseResponse
-from app.schemas import PyObjectId
 
 
 class PlanBase(BaseModel):
@@ -44,11 +43,11 @@ class PlanUpdate(BaseModel):
     is_trial_available: Optional[bool] = None
     trial_period_days: Optional[int] = None
 
-    updated_by: Optional[PyObjectId] = None
+    updated_by: Optional[PydanticObjectId] = None
 
 
 class PlanResponse(PlanBase, BaseResponse):
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
-    created_by: Optional[PyObjectId] = None
-    updated_by: Optional[PyObjectId] = None
+    created_by: Optional[PydanticObjectId] = None
+    updated_by: Optional[PydanticObjectId] = None

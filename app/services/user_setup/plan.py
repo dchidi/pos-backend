@@ -1,8 +1,12 @@
 from typing import List, Optional, Tuple, Any, Dict
+
 from app.models.user_setup.plan import Plan
+
 from app.schemas.user_setup.plan import PlanCreate, PlanUpdate, PlanResponse
+
 from app.services.crud_services import CRUD
-from app.constants.sort_order_enum import SortOrder
+
+from app.constants import SortOrder
 
 crud = CRUD(Plan)
 

@@ -1,5 +1,6 @@
 from beanie import Document, PydanticObjectId
 from typing import Optional
+
 from app.models.base import TimeStampMixin
 
 class Branch(Document, TimeStampMixin):

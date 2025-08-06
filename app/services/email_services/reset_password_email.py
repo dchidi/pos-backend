@@ -1,6 +1,8 @@
 from email.message import EmailMessage
 from aiosmtplib import SMTP
+
 from app.core.settings import settings 
+
 from app.utils.template_path import template_env
 
 

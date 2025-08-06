@@ -1,10 +1,12 @@
 from beanie import Document, Indexed, PydanticObjectId
 from pydantic import EmailStr, Field, field_validator
 from typing import Optional, Set, Annotated, Union
-from app.constants.role_enum import UserRole
 from pymongo import ASCENDING
 import re
 from datetime import datetime, timezone
+
+from app.constants import UserRole
+
 from app.models.base import TimeStampMixin
 
 RoleStr = Annotated[str, Field(min_length=2, max_length=64)]

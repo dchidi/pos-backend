@@ -15,7 +15,7 @@ from app.services.auth import (
 
 
 
-from app.constants.sort_order import SortOrder
+from app.constants import SortOrder
 
 
 from app.utils.db_transaction import with_transaction

@@ -6,12 +6,7 @@ from typing import List, Optional, Annotated
 from enum import Enum
 from pymongo import ASCENDING, DESCENDING
 
-class TransferStatus(str, Enum):
-    PENDING = "pending"
-    APPROVED = "approved"
-    REJECTED = "rejected"
-    COMPLETED = "completed"
-    IN_TRANSIT = "in_transit"
+from app.constants import TransferStatus
 
 class StockTransferItem(BaseModel):
     product_id: str

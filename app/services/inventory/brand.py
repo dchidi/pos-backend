@@ -1,7 +1,10 @@
 from typing import List, Optional
 from beanie import PydanticObjectId
+
 from app.models.inventory.brand import Brand
+
 from app.schemas.inventory.brand import BrandCreate, BrandUpdate
+
 from app.services.exceptions import NotFoundError, AlreadyExistsError, ValidationError
 
 

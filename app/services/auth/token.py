@@ -5,7 +5,6 @@ from app.core.settings import settings
 
 from app.services.exceptions import UnAuthorized
 
-from app.schemas import PyObjectId
 
 
 def decode_token(token: str) -> dict:

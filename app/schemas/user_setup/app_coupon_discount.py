@@ -1,9 +1,9 @@
 from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import datetime
-from app.constants.currency_enum import Currency
-from app.constants.status_enum import TenantTier
-from app.schemas import PyObjectId
+from beanie import PydanticObjectId
+
+from app.constants import Currency, TenantTier
 from app.schemas.base import BaseResponse
 
 
@@ -17,7 +17,7 @@ class AppCouponDiscountBase(BaseModel):
     code: Optional[str] = Field(None, max_length=30, description="Optional coupon code")
     requires_code: Optional[bool] = Field(default=False, description="True if code is required to apply")
 
-    valid_for_plan_ids: Optional[List[PyObjectId]] = Field(None, description="Restrict to specific plan IDs")
+    valid_for_plan_ids: Optional[List[PydanticObjectId]] = Field(None, description="Restrict to specific plan IDs")
     valid_for_tiers: Optional[List[TenantTier]] = Field(None, description="Restrict to specific tenant tiers")
     valid_durations_in_days: Optional[List[int]] = Field(None, description="Only applies to these subscription durations")
 
@@ -45,7 +45,7 @@ class AppCouponDiscountUpdate(BaseModel):
     code: Optional[str] = Field(None, max_length=30)
     requires_code: Optional[bool] = None
 
-    valid_for_plan_ids: Optional[List[PyObjectId]] = None
+    valid_for_plan_ids: Optional[List[PydanticObjectId]] = None
     valid_for_tiers: Optional[List[TenantTier]] = None
     valid_durations_in_days: Optional[List[int]] = None
 
@@ -60,6 +60,6 @@ class AppCouponDiscountUpdate(BaseModel):
 
 
 class AppCouponDiscountResponse(AppCouponDiscountBase, BaseResponse):
-    id: PyObjectId
+    id: PydanticObjectId
     created_at: Optional[datetime]
     updated_at: Optional[datetime]

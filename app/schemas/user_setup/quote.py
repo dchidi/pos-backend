@@ -1,10 +1,9 @@
 from pydantic import BaseModel, Field, EmailStr, HttpUrl
 from typing import Optional, List
 from datetime import datetime
-from app.schemas import PyObjectId
-from app.constants.currency_enum import Currency
-from app.constants.payment_method_enum import PaymentMethod
-from app.constants.status_enum import TenantTier
+from beanie import PydanticObjectId
+
+from app.constants import TenantTier, Currency, PaymentMethod
 from app.schemas.base import BaseResponse
 
 
@@ -27,7 +26,7 @@ class QuoteAddressSchema(BaseModel):
 
 
 class QuoteBase(BaseModel):
-    user_id: Optional[PyObjectId] = Field(None)
+    user_id: Optional[PydanticObjectId] = Field(None)
     full_name: Optional[str] = Field(None, max_length=100)
     email: Optional[EmailStr] = None
     phone_number: Optional[str] = Field(None, max_length=20)
@@ -37,7 +36,7 @@ class QuoteBase(BaseModel):
     industry: Optional[str] = None
     logo_url: Optional[HttpUrl] = None
 
-    plan_id: Optional[PyObjectId] = None
+    plan_id: Optional[PydanticObjectId] = None
     tier: Optional[TenantTier] = None
 
     settings: Optional[QuoteSettingsSchema] = None
@@ -65,7 +64,7 @@ class QuoteUpdate(BaseModel):
     industry: Optional[str] = None
     logo_url: Optional[HttpUrl] = None
 
-    plan_id: Optional[PyObjectId] = None
+    plan_id: Optional[PydanticObjectId] = None
     tier: Optional[TenantTier] = None
 
     settings: Optional[QuoteSettingsSchema] = None
@@ -80,6 +79,6 @@ class QuoteUpdate(BaseModel):
 
 
 class QuoteResponse(QuoteBase, BaseResponse):
-    id: PyObjectId
+    id: PydanticObjectId
     created_at: datetime
     updated_at: datetime

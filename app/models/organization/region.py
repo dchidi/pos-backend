@@ -1,6 +1,7 @@
 from beanie import Document, Indexed, PydanticObjectId
 from pydantic import Field, field_validator
 from typing import Annotated
+
 from app.models.base import TimeStampMixin                      
        
 

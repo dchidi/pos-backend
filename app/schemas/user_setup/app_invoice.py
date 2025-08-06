@@ -1,11 +1,11 @@
 from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import datetime
+from beanie import PydanticObjectId
 
-from app.constants.currency_enum import Currency
-from app.constants.status_enum import PaymentStatus, TenantTier
+from app.constants import Currency, PaymentStatus, TenantTier
 from app.schemas.base import BaseResponse
-from app.schemas import PyObjectId
+
 
 
 class PlanInfoSnapshot(BaseModel):
@@ -20,7 +20,7 @@ class PlanInfoSnapshot(BaseModel):
 
 
 class AppInvoiceBase(BaseModel):
-    company_id: PyObjectId = Field(..., description="Reference to the tenant or subscriber")
+    company_id: PydanticObjectId = Field(..., description="Reference to the tenant or subscriber")
     invoice_number: str = Field(..., description="Unique invoice identifier")
 
     currency: Currency = Field(default=Currency.US_DOLLAR)

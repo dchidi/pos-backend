@@ -1,16 +1,19 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, List
-from beanie import Document, Indexed, PydanticObjectId
-from pydantic import BaseModel, Field, EmailStr, HttpUrl
-from app.constants.currency_enum import Currency
-from app.constants.payment_method_enum import PaymentMethod
-from app.constants.status_enum import TenantTier
+from beanie import Document, PydanticObjectId
+from pydantic import Field, EmailStr, AnyUrl
+from pymongo import IndexModel, ASCENDING
+
+from app.models.base import TimeStampMixin
+
+from app.constants import Currency, PaymentMethod, TenantTier
+
 from app.schemas.user_setup.quote import QuoteAddressSchema, QuoteSettingsSchema
 
 
 
 
-class Quote(Document):
+class Quote(Document, TimeStampMixin):
     # User identity and contact (optional for internal tracking)
     user_id: Optional[PydanticObjectId] = Field(None)
     full_name: Optional[str] = Field(None, max_length=100)
@@ -19,9 +22,9 @@ class Quote(Document):
 
     # Business info
     company_name: Optional[str] = None
-    website: Optional[HttpUrl] = None
+    website: Optional[AnyUrl] = None
     industry: Optional[str] = None
-    logo_url: Optional[HttpUrl] = None
+    logo_url: Optional[AnyUrl] = None
 
     # Plan selection
     plan_id: Optional[PydanticObjectId] = Field(None)
@@ -37,19 +40,13 @@ class Quote(Document):
     expected_start_date: Optional[datetime] = None
     notes: Optional[str] = None
 
-    # Lifecycle
-    completed: bool = Field(default=False)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
-
     class Settings:
         name = "quotes"
         indexes = [
-            Indexed("user_id"),
-            Indexed("email"),
-            Indexed("plan_id"),
-            Indexed("completed"),
-            Indexed([("created_at", 1)])
+            IndexModel([("user_id", ASCENDING)], name="quote_md_user_id"),
+            IndexModel([("email", ASCENDING)], name="quote_md_email"),
+            IndexModel([("plan_id", ASCENDING)], name="quote_md_plan_id"),
+            IndexModel([("created_at", ASCENDING)], name="quote_md_created_at")
         ]
 
     class Config:

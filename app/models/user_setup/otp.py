@@ -1,7 +1,6 @@
 from beanie import Document
 from pydantic import EmailStr, Field
-from datetime import datetime, timedelta, timezone
-from typing import Optional
+from datetime import datetime, timezone
 
 
 class OTP(Document):

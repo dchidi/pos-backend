@@ -49,7 +49,7 @@ class MongoDB:
             await init_beanie(
                 database=db,
                 document_models=MODELS,
-                allow_index_dropping=False
+                allow_index_dropping=True  # ← drop & rebuild any conflicting indexes
             )
             
 

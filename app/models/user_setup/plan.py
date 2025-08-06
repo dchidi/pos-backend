@@ -5,8 +5,7 @@ from pymongo import ASCENDING, IndexModel
 
 from app.models.base import TimeStampMixin
 
-from app.constants.tenants_enum import TenantTier
-from app.constants.currency_enum import Currency
+from app.constants import TenantTier, Currency
 
 
 class Plan(Document, TimeStampMixin):

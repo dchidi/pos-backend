@@ -5,8 +5,8 @@ from datetime import datetime
 from pymongo import ASCENDING, IndexModel
 
 from app.models.base import TimeStampMixin
-from app.constants.currency_enum import Currency
-from app.constants.status_enum import PaymentStatus, TenantTier
+
+from app.constants import Currency, PaymentStatus, TenantTier
 
 
 class PlanInfo(BaseModel):

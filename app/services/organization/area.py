@@ -1,7 +1,10 @@
 from typing import List, Optional
 from beanie import PydanticObjectId
+
 from app.models.organization.area import Area
+
 from app.schemas.organization.location import AreaCreate, AreaUpdate
+
 from app.services.exceptions import (
     NotFoundError, AlreadyExistsError, ValidationError
 )

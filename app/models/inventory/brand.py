@@ -1,6 +1,7 @@
 from pydantic import Field, AnyUrl
 from typing import Optional, List, Annotated
 from beanie import Indexed, Document, PydanticObjectId
+
 from app.models.base import TimeStampMixin
 
 class Brand(Document, TimeStampMixin):

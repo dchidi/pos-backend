@@ -1,11 +1,10 @@
 from datetime import datetime
 from typing import Optional, List
-from pydantic import BaseModel, Field
-from beanie import Document, Indexed
+from pydantic import Field
+from beanie import Document, PydanticObjectId
 from pymongo import ASCENDING, IndexModel
-from app.schemas import PyObjectId
-from app.constants.currency_enum import Currency
-from app.constants.status_enum import TenantTier
+
+from app.constants import Currency, TenantTier
 
 
 class AppCouponAndDiscount(Document):
@@ -21,7 +20,7 @@ class AppCouponAndDiscount(Document):
     requires_code: bool = Field(default=False, description="If true, must provide matching coupon code to apply")
 
     # Plan/duration-based rules
-    valid_for_plan_ids: Optional[List[PyObjectId]] = Field(None, description="Restrict to specific plans")
+    valid_for_plan_ids: Optional[List[PydanticObjectId]] = Field(None, description="Restrict to specific plans")
     valid_for_tiers: Optional[List[TenantTier]] = Field(None, description="Restrict to specific plan tiers")
     valid_durations_in_days: Optional[List[int]] = Field(None, description="Only apply if subscription matches duration")
 

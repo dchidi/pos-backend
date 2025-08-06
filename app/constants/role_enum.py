@@ -17,9 +17,3 @@ class RoleEnum(str, Enum):
   customer_support = "customer_support"
   maintenance = "maintenance"
   hr = "human_resource"
-
-
-class RoleStatus(str, Enum):
-    ACTIVE = "active"
-    INACTIVE = "inactive"
-    ARCHIVED = "archived"

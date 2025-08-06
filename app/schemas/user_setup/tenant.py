@@ -2,9 +2,8 @@ from pydantic import BaseModel, Field, EmailStr, AnyUrl
 from typing import Optional, List, Dict
 from datetime import datetime
 from app.schemas.base import BaseResponse
-from app.schemas import PyObjectId
-from app.constants.status_enum import TenantStatus, TenantTier
-from app.constants.payment_method_enum import PaymentMethod
+from beanie import PydanticObjectId
+from app.constants import TenantStatus, TenantTier, PaymentMethod
 
 
 class AddressSchema(BaseModel):
@@ -54,7 +53,7 @@ class TenantBase(BaseModel):
     status: TenantStatus = Field(default=TenantStatus.ACTIVE)
     settings: TenantSettingsSchema = Field(default_factory=TenantSettingsSchema)
 
-    plan_id: PyObjectId = Field(..., description="Reference to the current plan (required for all tenants)")
+    plan_id: PydanticObjectId = Field(..., description="Reference to the current plan (required for all tenants)")
 
     addresses: List[AddressSchema] = Field(default_factory=list)
     billing_info: Optional[BillingInfoSchema] = None
@@ -69,8 +68,8 @@ class TenantBase(BaseModel):
 
 
 class TenantCreate(TenantBase):
-    created_by: Optional[PyObjectId] = None
-    updated_by: Optional[PyObjectId] = None
+    created_by: Optional[PydanticObjectId] = None
+    updated_by: Optional[PydanticObjectId] = None
 
 
 class TenantUpdate(BaseModel):
@@ -87,7 +86,7 @@ class TenantUpdate(BaseModel):
     status: Optional[TenantStatus] = None
     settings: Optional[TenantSettingsSchema] = None
 
-    plan_id: Optional[PyObjectId] = None
+    plan_id: Optional[PydanticObjectId] = None
 
     addresses: Optional[List[AddressSchema]] = None
     billing_info: Optional[BillingInfoSchema] = None
@@ -102,8 +101,8 @@ class TenantUpdate(BaseModel):
 
 
 class TenantResponse(TenantBase, BaseResponse):
-    id: PyObjectId
+    id: PydanticObjectId
     created_at: datetime
     updated_at: datetime
-    created_by: Optional[PyObjectId] = None
-    updated_by: Optional[PyObjectId] = None
+    created_by: Optional[PydanticObjectId] = None
+    updated_by: Optional[PydanticObjectId] = None

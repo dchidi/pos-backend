@@ -1,4 +1,5 @@
-from datetime import datetime
+from datetime import datetime, timezone
+
 from app.models.blacklisted_token import BlacklistedToken
 
 from app.services.auth.token import decode_token
@@ -16,4 +17,4 @@ async def logout(refresh_token: str) -> dict[str, str]:
 
 # Run in cron
 async def cleanup_expired_tokens():
-    await BlacklistedToken.find({"expires_at": {"$lt": datetime.now()}}).delete()
+    await BlacklistedToken.find({"expires_at": {"$lt": datetime.now(timezone.utc)}}).delete()

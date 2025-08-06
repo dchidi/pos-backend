@@ -1,11 +1,15 @@
 from fastapi import Depends
 from typing import List, Optional, Tuple, Any, Dict
 from beanie import PydanticObjectId
+
 from app.models.organization.region import Region
+
 from app.schemas.organization.location import RegionCreate, RegionUpdate
+
 from app.services.crud_services import CRUD
-from app.constants.sort_order import SortOrder
 from app.services.auth import get_current_company
+
+from app.constants import SortOrder
 
 crud = CRUD(Region)
 

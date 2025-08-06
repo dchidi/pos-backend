@@ -1,5 +1,5 @@
 from typing import List, Tuple
-from app.constants.sort_order import SortOrder
+from app.constants.sort_order_enum import SortOrder
 
 
 def parse_sort(clause: str | None) -> List[Tuple[str, SortOrder]]:

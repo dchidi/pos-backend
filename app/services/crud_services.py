@@ -1,21 +1,3 @@
-# from typing import (
-#     Type, TypeVar, Generic, List, Optional, Union, Dict, Any, Tuple
-# )
-# from pydantic import BaseModel
-# from beanie import Document, PydanticObjectId
-# from collections.abc import Mapping
-
-# from app.services.exceptions import (
-#     NotFoundError, AlreadyExistsError, ValidationError
-# )
-
-
-# from app.constants.sort_order import SortOrder
-
-
-# ModelType = TypeVar("ModelType", bound=Document)
-
-
 from typing import (
     Type, TypeVar, Generic, List, Optional, Union, Dict, Any, Tuple
 )
@@ -27,7 +9,7 @@ from app.services.exceptions import (
     NotFoundError, AlreadyExistsError, ValidationError
 )
 
-from app.constants.sort_order import SortOrder
+from app.constants import SortOrder
 
 ModelType = TypeVar("ModelType", bound=Document)
 

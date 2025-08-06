@@ -2,8 +2,8 @@ from beanie import Document, PydanticObjectId
 from pydantic import Field
 from typing import Optional, Set
 from pymongo import ASCENDING, IndexModel
+
 from app.models.base import TimeStampMixin
-from app.constants import RoleStatus
 
 
 class Role(Document, TimeStampMixin):    

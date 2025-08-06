@@ -1,7 +1,10 @@
 from typing import List, Optional
 from beanie import PydanticObjectId
+
 from app.models.organization.state import State
+
 from app.schemas.organization.location import StateCreate, StateUpdate
+
 from app.services.exceptions import (
     NotFoundError, AlreadyExistsError, ValidationError
 )

@@ -28,6 +28,7 @@ class TransferStatus(str, Enum):
     APPROVED = "approved"
     REJECTED = "rejected"
     COMPLETED = "completed"
+    IN_TRANSIT = "in_transit"
 
 
 class TenantTier(str, Enum):
@@ -36,3 +37,14 @@ class TenantTier(str, Enum):
     BASIC = "basic"
     PRO = "pro"
     ENTERPRISE = "enterprise"
+
+class StockStatus(str, Enum):
+    ACTIVE = "active"
+    QUARANTINED = "quarantined"
+    RESERVED = "reserved"
+    DAMAGED = "damaged"
+
+class AuditAction(str, Enum):
+    CREATE = "CREATE"
+    UPDATE = "UPDATE"
+    DELETE = "DELETE"

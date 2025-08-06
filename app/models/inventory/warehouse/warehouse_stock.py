@@ -3,14 +3,10 @@ from pydantic import Field, field_validator
 from datetime import datetime, timezone
 from typing import Optional
 from decimal import Decimal
-from pymongo import ASCENDING, DESCENDING
+from pymongo import ASCENDING
 from enum import Enum
 
-class StockStatus(str, Enum):
-    ACTIVE = "active"
-    QUARANTINED = "quarantined"
-    RESERVED = "reserved"
-    DAMAGED = "damaged"
+from app.constants import StockStatus
 
 class WarehouseStock(Document):
     product_id: str = Field(..., description="Reference to product document")

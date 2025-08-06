@@ -1,9 +1,9 @@
 from pydantic import BaseModel, Field
 from typing import Optional, Set
-from app.constants import RoleStatus
+from beanie import PydanticObjectId
 from datetime import datetime
+
 from app.schemas.base import BaseResponse
-from app.schemas import PyObjectId
 
 
 class RoleBase(BaseModel):
@@ -14,8 +14,8 @@ class RoleBase(BaseModel):
     
 
 class RoleCreate(RoleBase):                 
-    created_by: Optional[PyObjectId] = None,                
-    updated_by: Optional[PyObjectId] = None
+    created_by: Optional[PydanticObjectId] = None,                
+    updated_by: Optional[PydanticObjectId] = None
 
 class RoleUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=3, max_length=50)
@@ -24,8 +24,8 @@ class RoleUpdate(BaseModel):
 
 class RoleResponse(RoleBase, BaseResponse):
     permissions: Optional[Set[str]] = None
-    company_id: Optional[PyObjectId] = None
+    company_id: Optional[PydanticObjectId] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
-    created_by: Optional[PyObjectId] = None
-    updated_by: Optional[PyObjectId] = None
+    created_by: Optional[PydanticObjectId] = None
+    updated_by: Optional[PydanticObjectId] = None

@@ -1,17 +1,10 @@
-# accounting/models/audit_log.py
-
-from datetime import datetime
-from enum import Enum
+from datetime import datetime, timezone
 from typing import Optional, Dict, Any
 
-from beanie import Document, Indexed
-from pydantic import BaseModel, Field
+from beanie import Document
+from pydantic import Field
 
-
-class AuditAction(str, Enum):
-    CREATE = "CREATE"
-    UPDATE = "UPDATE"
-    DELETE = "DELETE"
+from app.constants import AuditAction
 
 
 class AuditLog(Document):
@@ -20,7 +13,7 @@ class AuditLog(Document):
     action: AuditAction = Field(..., description="Type of action performed")
 
     changed_by: str = Field(..., description="User or system ID that made the change")
-    changed_at: datetime = Field(default_factory=datetime.utcnow)
+    changed_at: datetime = Field(default_factory=datetime.now(timezone.utc))
 
     changes: Optional[Dict[str, Any]] = Field(
         default_factory=dict,

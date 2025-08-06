@@ -1,12 +1,12 @@
-from typing import List, Optional, Set, Annotated
+from typing import Optional, Set, Annotated
 from datetime import datetime
+from beanie import PydanticObjectId
 
 from pydantic import BaseModel, EmailStr, Field, ConfigDict, field_validator
 
-from app.schemas import PyObjectId
 
 from app.schemas.base import BaseResponse  
-from app.constants.role_enum import UserRole
+from app.constants import UserRole
 
 RoleStr = Annotated[str, Field(min_length=2, max_length=64)]
 
@@ -15,10 +15,10 @@ class UserBase(BaseModel):
     full_name: str = Field(..., example="John Doe")
     role: RoleStr | UserRole = UserRole.CASHIER
     permissions: Set[str] = Field(default_factory=set, example={"can_view_user"})
-    branch_ids: Set[PyObjectId] = Field(default_factory=set)
-    department_id: Optional[PyObjectId] = None
+    branch_ids: Set[PydanticObjectId] = Field(default_factory=set)
+    department_id: Optional[PydanticObjectId] = None
     is_verified: bool = False
-    company_id: Optional[PyObjectId] = None
+    company_id: Optional[PydanticObjectId] = None
 
     # hashed_password: str = Field(repr=False)
 
@@ -39,7 +39,7 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str = Field(..., min_length=8)   
-    warehouse_id: Optional[PyObjectId] = None 
+    warehouse_id: Optional[PydanticObjectId] = None 
     
     
 
@@ -49,8 +49,8 @@ class UserUpdate(BaseModel):
     full_name: Optional[str] = None
     role: Optional[RoleStr | UserRole] = None
     permissions: Optional[Set[str]] = None
-    branch_ids: Optional[Set[PyObjectId]] = None
-    department_id: Optional[PyObjectId] = None
+    branch_ids: Optional[Set[PydanticObjectId]] = None
+    department_id: Optional[PydanticObjectId] = None
     is_verified: Optional[bool] = None
     password: Optional[str] = None
 

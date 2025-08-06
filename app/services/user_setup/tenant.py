@@ -1,10 +1,13 @@
 from typing import List, Optional, Tuple, Any, Dict
 from beanie import PydanticObjectId
+
 from app.models.user_setup.tenant import Tenant
-from app.schemas.organization .tenant import TenantCreate, TenantUpdate, TenantResponse
+
+from app.schemas.user_setup.tenant import TenantCreate, TenantUpdate, TenantResponse
+
 from app.services.crud_services import CRUD
-from app.constants.sort_order import SortOrder
-from app.services.exceptions import ValidationError
+
+from app.constants import SortOrder
 
 crud = CRUD(Tenant)
 

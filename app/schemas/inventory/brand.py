@@ -2,14 +2,14 @@ from pydantic import BaseModel, Field, AnyUrl
 from datetime import datetime
 from typing import List, Optional
 from app.schemas.base import BaseResponse
-from app.schemas import PyObjectId
+from beanie import PydanticObjectId
 
 class BrandBase(BaseModel):
     name: str = Field(..., example="Golden Crust")
     description: Optional[str] = Field(None, example="Premium bakery brand")
     logo_url: Optional[AnyUrl] = Field(None, example="https://example.com/logo.png")
-    category_ids: List[PyObjectId] = Field(default_factory=list, example=["64" * 12])
-    company_id: Optional[PyObjectId] = Field(
+    category_ids: List[PydanticObjectId] = Field(default_factory=list, example=["64" * 12])
+    company_id: Optional[PydanticObjectId] = Field(
         None,
         description="The company or manufacturer that owns the brand"
     )
@@ -23,8 +23,8 @@ class BrandUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
     logo_url: Optional[AnyUrl] = None
-    category_ids: Optional[List[PyObjectId]] = None
-    company_id: Optional[PyObjectId] = None
+    category_ids: Optional[List[PydanticObjectId]] = None
+    company_id: Optional[PydanticObjectId] = None
 
 class BrandResponse(BrandBase, BaseResponse):
     """Schema for reading brand data."""
