@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Query, Path, status, Depends
+from fastapi import APIRouter, Query, Path, status, Depends, Request
 from typing import List, Optional, Dict, Any
 from app.utils.parse_sort_clause import parse_sort
 
@@ -17,28 +17,15 @@ from app.services.user_setup.plan import (
     activate_plan
 )
 
-from app.services.auth import get_current_user_id
+from app.services.auth import require_roles_or_permissions
 
 
 router = APIRouter()
 
 
-@router.post(
-    "/",
-    response_model=PlanResponse,
-    status_code=status.HTTP_201_CREATED,
-    summary="Create a new plan",
-)
-async def create_plan_route(
-    payload: PlanCreate,
-    current_user_id:str = Depends(get_current_user_id)
-):
-    return await create_plan(payload, current_user_id)
-
 
 # GET /plans/?skip=0&limit=20&include_deleted=false&name=East%20Plan
 # &search_name=Reg&exact_match=false&sort=name
-
 @router.get(
     "/",
     response_model=List[PlanResponse],
@@ -94,14 +81,13 @@ async def get_plans_route(
         sort_order=sort_params or None,
     )
 
-
 @router.get(
     "/{plan_id}",
     response_model=PlanResponse,
     summary="Get a single plan by ID",
 )
 async def get_plan_route(
-    plan_id: str = Path(..., description="Brand ObjectId"),
+    plan_id: str = Path(..., description="Plan ObjectId"),
     include_deleted: bool = Query(
         False, description="Include if the plan is soft-deleted"
     ),    
@@ -111,17 +97,29 @@ async def get_plan_route(
 ):
     return await get_plan(plan_id, include_deleted, include_deactivated)
 
+@router.post(
+    "/",
+    response_model=PlanResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create a new plan",
+)
+async def create_plan_route(
+    payload: PlanCreate,   
+    current_user_id = Depends(require_roles_or_permissions("app_manager", "plan:create"))
+):  
+    return await create_plan(payload, current_user_id)
 
 @router.put(
     "/{plan_id}",
     response_model=PlanResponse,
-    summary="Update an existing plan",
+    summary="Update an existing plan"
 )
 async def update_plan_route(
-    plan_id: str = Path(..., description="Brand ObjectId"),
+    plan_id: str = Path(..., description="Plan ObjectId"),
     payload: PlanUpdate = ...,
+    current_user_id = Depends(require_roles_or_permissions("app_manager", "plan:update"))
 ):
-    return await update_plan(plan_id=plan_id, data=payload)
+    return await update_plan(plan_id=plan_id, data=payload, user_id=current_user_id)
 
 
 @router.patch(
@@ -130,9 +128,10 @@ async def update_plan_route(
     summary="Soft-delete a plan",
 )
 async def soft_delete_plan_route(
-    plan_id: str = Path(..., description="Brand ObjectId")
+    plan_id: str = Path(..., description="Plan ObjectId"),    
+    current_user_id = Depends(require_roles_or_permissions("app_manager", "plan:delete:soft"))
 ):
-    await soft_delete_plan(plan_id=plan_id)
+    await soft_delete_plan(plan_id=plan_id, user_id=current_user_id)
 
 @router.delete(
     "/{plan_id}/permanently",
@@ -140,9 +139,11 @@ async def soft_delete_plan_route(
     summary="Hard-delete a plan and it cannot be restored",
 )
 async def delete_plan_route(
-    plan_id: str = Path(..., description="Brand ObjectId")
+    plan_id: str = Path(..., description="Plan ObjectId"),    
+    current_user_id = Depends(require_roles_or_permissions("app_manager", "plan:delete:hard")),
+    request: Request = None,
 ):
-    await delete_plan(plan_id)
+    await delete_plan(plan_id=plan_id, user_id=current_user_id, request=request)
 
 @router.patch(
     "/{plan_id}/restore",
@@ -150,9 +151,10 @@ async def delete_plan_route(
     summary="Restore a soft-deleted plan",
 )
 async def restore_plan_route(
-    plan_id: str = Path(..., description="Brand ObjectId")
+    plan_id: str = Path(..., description="Plan ObjectId"),    
+    current_user_id = Depends(require_roles_or_permissions("app_manager", "plan:restore"))
 ):
-    return await restore_plan(plan_id=plan_id)
+    return await restore_plan(plan_id=plan_id, user_id=current_user_id)
 
 
 @router.patch(
@@ -161,9 +163,10 @@ async def restore_plan_route(
     summary="Deactivate a plan",
 )
 async def disable_plan_route(
-    plan_id: str = Path(..., description="Brand ObjectId")
+    plan_id: str = Path(..., description="Plan ObjectId"),    
+    current_user_id = Depends(require_roles_or_permissions("app_manager", "plan:disable"))
 ):
-    await disable_plan(plan_id)
+    await disable_plan(plan_id=plan_id, user_id=current_user_id)
 
 
 @router.patch(
@@ -172,6 +175,7 @@ async def disable_plan_route(
     summary="Activate a disabled plan",
 )
 async def restore_plan_route(
-    plan_id: str = Path(..., description="Brand ObjectId")
+    plan_id: str = Path(..., description="Plan ObjectId"),    
+    current_user_id = Depends(require_roles_or_permissions("app_manager", "plan:activate"))
 ):
-    return await activate_plan(plan_id)
+    return await activate_plan(plan_id=plan_id, user_id=current_user_id)

@@ -1,4 +1,4 @@
-from typing import List, Optional, Tuple, Any, Dict
+from typing import List, Optional, Tuple, Any, Dict, Union
 from beanie import PydanticObjectId
 
 from app.models.user_setup.tenant import Tenant

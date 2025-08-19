@@ -45,9 +45,10 @@ class AppCouponAndDiscount(Document):
             IndexModel([("active", ASCENDING)], name="discount_active_idx"),
             IndexModel([("start_date", ASCENDING), ("end_date", ASCENDING)], name="discount_validity_range_idx"),
         ]
-
-    class Config:
-        schema_extra = {
+        
+    model_config = {
+        "from_attributes": True,
+        "json_schema_extra" : {
             "example": {
                 "name": "Summer Promo 20%",
                 "description": "20% off all pro-tier plans in USD",
@@ -64,3 +65,4 @@ class AppCouponAndDiscount(Document):
                 "stackable": False
             }
         }
+    }

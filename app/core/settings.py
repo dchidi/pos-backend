@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 from pydantic import AnyHttpUrl
 from pydantic_settings import BaseSettings
 
@@ -6,8 +6,13 @@ class Settings(BaseSettings):
     
     APP_NAME: str = "ScanPay"
     PROJECT_NAME: str = "ScanPay API"
+
     MONGO_URI: str = "mongodb://localhost:27017"
     MONGO_DB_NAME: str = "scanpay_db"
+    # MONGO_DB_NAME: str = "scanpay_db_dev"
+    # MONGO_DB_NAME: str = "scanpay_db_prod"    
+    # MONGO_DB_NAME: str = "scanpay_db_uat"
+
     SECRET_KEY: str = "your-secret-key"
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30    

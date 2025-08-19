@@ -9,7 +9,7 @@ from app.schemas.base import BaseResponse
 class WarehouseBase(BaseModel):
   name: str = Field(..., min_length=3, max_length=100, example="Main Branch Warehouse")
   code: str = Field(..., min_length=2, max_length=100, example="WH-MAIN")
-  branch_id: PydanticObjectId = Field(..., example="64f95b0c2ab5ec9e0b22c77f")
+  store_id: PydanticObjectId = Field(..., example="64f95b0c2ab5ec9e0b22c77f")
   warehouse_type: WarehouseType = Field(default=WarehouseType.USER, example="branch")
   description: Optional[str] = Field(None, max_length=500, example="Main warehouse for Lagos branch")
   location: Optional[str] = Field(None, max_length=200, example="23 Bode Thomas Street, Surulere, Lagos")
@@ -23,7 +23,7 @@ class WarehouseCreate(WarehouseBase):
 class WarehouseUpdate(BaseModel):
   name: Optional[str] = Field(None, min_length=3, max_length=100)
   code: Optional[str] = Field(None, min_length=2, max_length=100)
-  branch_id: Optional[PydanticObjectId] = None
+  store_id: Optional[PydanticObjectId] = None
   warehouse_type: Optional[WarehouseType] = None
   description: Optional[str] = Field(None, max_length=500)
   location: Optional[str] = Field(None, max_length=200)

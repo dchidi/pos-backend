@@ -47,6 +47,8 @@ class PlanUpdate(BaseModel):
 
 
 class PlanResponse(PlanBase, BaseResponse):
+    is_deleted: Optional[bool] = False
+    is_active: Optional[bool] = False
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
     created_by: Optional[PydanticObjectId] = None

@@ -91,9 +91,15 @@ async def list_users(
 async def update_user(
     user_id: str,
     data: UserUpdate,     
-    company_id:PydanticObjectId = Depends(get_current_company)
+    company_id:PydanticObjectId
 ) -> User:
-    res = await user_crud.update(user_id, company_id, data, unique_fields=["name", "code"])
+    res = await user_crud.update(
+        doc_id = user_id, 
+        company_id = company_id, 
+        payload = data, 
+        unique_fields = ["name", "code"],
+        use_company_id = True
+    )
     return res
 
 async def soft_delete_user(

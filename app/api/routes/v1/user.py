@@ -1,5 +1,6 @@
-from fastapi import APIRouter, Query, Path, status, BackgroundTasks
+from fastapi import APIRouter, Query, Path, status, BackgroundTasks, Depends
 from typing import List, Optional, Dict, Any
+from beanie import PydanticObjectId
 
 from app.utils.parse_sort_clause import parse_sort
 from app.core.settings import settings
@@ -10,7 +11,7 @@ from app.schemas.user import (
 
 from app.models.user_setup.user import User
 
-from app.services.auth import require_permissions
+from app.services.auth import require_permissions, get_current_company
 
 from app.services.user import (
     create_user,
@@ -138,11 +139,11 @@ async def get_user_route(
     summary="Update an existing user",
 )
 async def update_user_route(
-    user_id: str = Path(..., description="Brand ObjectId"),    
-    company_id: str = Query(None, description="Company ObjectId"),
-    payload: UserUpdate = ...,
+    user_id: str = Path(..., description="User ObjectId"),    
+    payload: UserUpdate = ...,         
+    company_id:PydanticObjectId = Depends(get_current_company)
 ):
-    return await update_user(user_id, company_id, payload)
+    return await update_user(user_id = user_id, data = payload, company_id = company_id)
 
 
 @router.delete(

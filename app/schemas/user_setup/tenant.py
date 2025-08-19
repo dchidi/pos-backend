@@ -17,7 +17,6 @@ class AddressSchema(BaseModel):
 
 class BillingInfoSchema(BaseModel):
     company_name: str = Field(..., max_length=100)
-    tax_id: Optional[str] = Field(None, max_length=50)
     payment_method: PaymentMethod = Field(default=PaymentMethod.CREDIT_CARD)
     billing_email: EmailStr
     billing_address: Optional[AddressSchema] = None
@@ -35,7 +34,8 @@ class TenantSettingsSchema(BaseModel):
     locale: str = Field(default="en-US")
     currency: str = Field(default="USD", min_length=3, max_length=3)
     allow_multiple_locations: bool = Field(default=False)
-    max_users: int = Field(default=5, ge=1)
+    max_stores: int = Field(default=1)
+    add_ons_stores: int = Field(default=0)
     receipt_footer: Optional[str] = None
 
 
@@ -49,7 +49,7 @@ class TenantBase(BaseModel):
     phone_number: Optional[str] = Field(None, max_length=20)
     email: Optional[EmailStr] = None
 
-    tier: TenantTier = Field(default=TenantTier.BASIC)
+    tier: TenantTier = Field(default=TenantTier.FREE)
     status: TenantStatus = Field(default=TenantStatus.ACTIVE)
     settings: TenantSettingsSchema = Field(default_factory=TenantSettingsSchema)
 

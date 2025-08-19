@@ -1,6 +1,7 @@
 from typing import (
     Type, TypeVar, Generic, List, Optional, Union, Dict, Any, Tuple
 )
+from fastapi import Request
 from pydantic import BaseModel
 from beanie import Document, PydanticObjectId
 from collections.abc import Mapping
@@ -9,10 +10,12 @@ from app.services.exceptions import (
     NotFoundError, AlreadyExistsError, ValidationError
 )
 
-from app.constants import SortOrder
+from app.constants import SortOrder, LogLevel
+from app.models.logs import Log
 
 ModelType = TypeVar("ModelType", bound=Document)
 
+PROTECTED_FIELDS = {"_id", "id", "company_id", "created_by", "created_at"}
 
 class CRUD(Generic[ModelType]):
     def __init__(self, model: Type[ModelType]):
@@ -167,66 +170,109 @@ class CRUD(Generic[ModelType]):
         self,
         payload: BaseModel,
         doc_id: Union[PydanticObjectId, str],
-        company_id: Union[PydanticObjectId, str, None] = None,  # Make company_id optional
+        user_id: Union[PydanticObjectId, str], # Use to track who made the change
+        company_id: Union[PydanticObjectId, str, None] = None,
         unique_fields: Optional[List[str]] = None,
         session=None,
-        use_company_id: bool = True  # Flag to conditionally apply company_id
+        use_company_id: bool = True,  # Flag to conditionally apply company_id
     ) -> ModelType:
-        obj = await self.get_by_id(doc_id, company_id, session=session, use_company_id=use_company_id)
+        obj = await self.get_by_id(
+            doc_id=doc_id, company_id=company_id,
+            session=session, use_company_id=use_company_id,
+            include_deleted=True, include_deactivated=True
+        )
 
+        # Validate user_id
+        try:
+            user_oid = PydanticObjectId(str(user_id))
+        except Exception:
+            raise ValidationError("Invalid user_id")
+
+        # Normalize payload
         if isinstance(payload, BaseModel):
-            data = payload.model_dump(exclude_unset=True)
+            incoming = payload.model_dump(exclude_unset=True)
         elif isinstance(payload, Mapping):
-            data = dict(payload)  # in case it's not a native dict
+            incoming = dict(payload)
         else:
             raise ValidationError("Payload must be a Pydantic model or a dictionary")
 
-        checks = [f for f in (unique_fields or []) if f in data]
+        # Remove protected fields
+        for f in list(incoming.keys()):
+            if f in PROTECTED_FIELDS:
+                incoming.pop(f)
 
-        # Duplicate check scoped to company, only if company_id exists in the model
+        # Uniqueness checks (accept non-strings too)
+        checks = [f for f in (unique_fields or []) if f in incoming]
         dup_filters = []
         for field in checks:
-            val = data[field]
-            if not isinstance(val, str) or not val.strip():
+            val = incoming[field]
+            if isinstance(val, str) and not val.strip():
                 raise ValidationError(f"'{field}' must not be empty")
-            
-            # Only add company_id to the check if it exists and is relevant (i.e., if use_company_id is True)
-            if use_company_id and obj.company_id:
-                dup_filters.append({
-                    field: val.strip(),
-                    "company_id": obj.company_id,
-                    "_id": {"$ne": obj.id}
-                })
-            else:
-                # If use_company_id is False or company_id doesn't exist on the model, just check uniqueness by field
-                dup_filters.append({
-                    field: val.strip(),
-                    "_id": {"$ne": obj.id}
-                })
+            filt = {field: val}
+            if use_company_id and getattr(obj, "company_id", None):
+                filt["company_id"] = obj.company_id
+            filt["_id"] = {"$ne": obj.id}
+            dup_filters.append(filt)
 
         if dup_filters:
             existing = await self.model.find_one({"$or": dup_filters}, session=session)
             if existing:
-                raise AlreadyExistsError(
-                    f"{self.model.__name__} with these values already exists"
-                )
+                raise AlreadyExistsError(f"{self.model.__name__} with these values already exists")
 
-        # Update the object with the new data
-        for field, val in data.items():
-            setattr(obj, field, val)
-        await obj.replace(session=session)
-        return obj
+        # Compute delta vs current object to avoid no-op writes
+        to_set = {}
+        for k, v in incoming.items():
+            if getattr(obj, k, None) != v:
+                to_set[k] = v
 
+        if not to_set:
+            # Nothing changed; return without mutating audit fields
+            return obj
 
+        # Audit fields
+        to_set["updated_by"] = user_oid
+        # to_set["updated_at"] = datetime.now(timezone.utc)
+
+        # Optional optimistic concurrency (if you track updated_at or version)
+        # match = {"_id": obj.id, "updated_at": obj.updated_at}  # if present
+        match = {"_id": obj.id}
+
+        # Atomic update
+        updated = await self.model.find_one(match, session=session).update({"$set": to_set})
+        if not updated:
+            # If using optimistic locking with updated_at/version, this indicates a conflict
+            # raise ConflictError("Document was updated by someone else. Please retry.")
+            pass
+
+        # Re-fetch fresh document
+        return await self.get_by_id(
+            doc_id=doc_id, company_id=company_id,
+            session=session, use_company_id=use_company_id,
+            include_deleted=True, include_deactivated=True
+        )
+    
     async def update_flags(
         self,
         doc_id: Union[PydanticObjectId, str],
+        user_id: Union[PydanticObjectId, str],
         company_id: Union[PydanticObjectId, str] = None,
         fields: List[Tuple[str, bool]] = None,
         session=None,
         use_company_id: bool = True  # Flag to conditionally apply company_id
     ) -> ModelType:
-        obj = await self.get_by_id(doc_id, company_id, include_deleted=True, session=session, use_company_id=use_company_id)
+        # To ensure update always works if the document exist irrepective of delete and active status
+        # set include_deleted=True and include_deactivated=True
+        obj = await self.get_by_id(
+            doc_id=doc_id, company_id=company_id, 
+            include_deleted=True, include_deactivated=True,            
+            session=session, use_company_id=use_company_id
+        )
+
+        # Validate user_id
+        try:
+            user_oid = PydanticObjectId(str(user_id))
+        except Exception:
+            raise ValidationError("Invalid user_id")
 
         if not fields:
             raise ValidationError("No fields provided")
@@ -237,6 +283,8 @@ class CRUD(Generic[ModelType]):
             if not isinstance(value, bool):
                 raise ValidationError("Flag values must be boolean")
             setattr(obj, field, value)
+        
+        setattr(obj, "updated_by", user_oid)
 
         await obj.save(session=session)
         return obj
@@ -244,249 +292,47 @@ class CRUD(Generic[ModelType]):
     async def delete(
         self,
         doc_id: Union[PydanticObjectId, str],
+        user_id: Union[PydanticObjectId, str],
         company_id: Union[PydanticObjectId, str] = None,
         hard_delete: bool = False,
         session=None,
-        use_company_id: bool = True  # Flag to conditionally apply company_id
-    ) -> None:
-        obj = await self.get_by_id(doc_id, company_id, include_deleted=True, session=session, use_company_id=use_company_id)
-        
+        use_company_id: bool = True,  # Flag to conditionally apply company_id
+        request: Request = None
+    ) -> None:        
+        # To ensure update always works if the document exist irrepective of delete and active status
+        # set include_deleted=True and include_deactivated=True
+        obj = await self.get_by_id(
+            doc_id=doc_id, company_id=company_id, 
+            include_deleted=True, include_deactivated=True,            
+            session=session, use_company_id=use_company_id
+        )
+
         if hard_delete:
+            
+            endpoint = str(request.url) if request and hasattr(request, "url") else None
+            method = str(request.method) if request and hasattr(request, "method") else None
+            headers = {k: str(v)[:100] for k, v in request.headers.items()} if request and hasattr(request, "headers") else {}
+            query_params = {k: str(v)[:200] for k, v in request.query_params.items()} if request and hasattr(request, "query_params") else {}
+            client_host = request.client.host if request and hasattr(request, "client") and hasattr(request.client, "host") else None
+            
+            deleted_data = obj.model_dump()  # snapshot of the document
+            
+            await Log(
+                user_id=str(user_id) if user_id else None,
+                endpoint=endpoint,
+                action=method,
+                level=LogLevel.PERMANENT_DELETE,
+                details={
+                    "deleted_doc": deleted_data, 
+                    "error_msg": "",
+                    "headers": headers,
+                    "query_params": query_params,
+                    "client_host": client_host
+                }
+            ).insert()
+            
             await obj.delete(session=session)
         else:
             obj.is_deleted = True
+            obj.updated_by = user_id
             await obj.save(session=session)
-
-
-
-# class CRUD(Generic[ModelType]):
-#     def __init__(self, model: Type[ModelType]):
-#         self.model = model
-
-#     async def create(
-#         self,
-#         payload: Union[BaseModel, Dict[str, Any]],
-#         unique_fields: Optional[List[str]] = None,
-#         session= None
-#     ) -> ModelType:
-#         """
-#         Create a new document, validating and enforcing uniqueness on specified fields.
-#         :param payload: A Pydantic model with the data to insert.
-#         :param unique_fields: List of document field names to check for uniqueness.
-#         :returns: The inserted document instance.
-#         """
-
-#         # Process payload
-#         if isinstance(payload, BaseModel):
-#             data = payload.model_dump()
-#         elif isinstance(payload, Mapping):
-#             data = dict(payload)  # in case it's not a native dict
-#         else:
-#             raise ValidationError("Payload must be a Pydantic model or a dictionary")
-        
-#         checks = unique_fields or []
-
-#         # 1) Validate non-empty for each unique field
-#         filters = []
-#         for field in checks:
-#             val = data.get(field, "")
-#             if not isinstance(val, str) or not val.strip():
-#                 raise ValidationError(f"'{field}' must not be empty")
-#             filters.append({field: val.strip()})
-
-#         # 2) Check for duplicates
-#         if filters:
-#             existing = await self.model.find_one({"$or": filters}, session=session)
-#             if existing:
-#                 for field in checks:
-#                     if getattr(existing, field) == data[field].strip():
-#                         raise AlreadyExistsError(
-#                             f"{self.model.__name__} '{field}' = {data[field]!r} already exists"
-#                         )
-
-#         # 3) Instantiate & insert
-#         instance = self.model(**data)
-#         await instance.insert(session=session)
-#         return instance
-
-#     async def get_by_id(
-#         self,
-#         doc_id: Union[PydanticObjectId, str],
-#         company_id: Union[PydanticObjectId, str],
-#         include_deleted: bool = False,        
-#         include_deactivated: bool = False,
-#         session=None
-#     ) -> ModelType:
-#         try:
-#             doc_oid = PydanticObjectId(doc_id)
-#             company_oid = PydanticObjectId(company_id)
-#         except Exception as e:
-#             raise ValidationError("Invalid document identifier") from e
-
-#         query = {
-#             "_id": doc_oid,
-#             "company_id": company_oid
-#         }
-        
-#         if not include_deleted:
-#             query["is_deleted"] = False
-        
-#         if not include_deactivated:
-#             query["is_active"] = True
-
-#         obj = await self.model.find_one(query, session=session)
-             
-#         if not obj:
-#             # Generic error to avoid information leakage
-#             raise NotFoundError("Document not found or inaccessible")
-            
-#         return obj
-
-#     async def list(
-#         self,
-#         company_id: Union[PydanticObjectId, str],
-#         skip: int = 0,
-#         limit: int = 50,
-#         include_deleted: bool = False,
-#         include_deactivated: bool = False,
-#         filters: Optional[Dict[str, Any]] = None,
-#         search: Optional[Dict[str, str]] = None,
-#         exact_match: bool = False,
-#         sort: Optional[List[Tuple[str, SortOrder]]] = None
-#     ) -> List[ModelType]:
-#         """
-#         Tenant-isolated document listing with strict permission checks.
-#         """
-#         try:
-#             company_oid = PydanticObjectId(company_id)
-#         except Exception as e:
-#             raise ValidationError("Invalid company identifier") from e
-
-#         # Base query - MUST include company_id
-#         query_filter: Dict[str, Any] = {"company_id": company_oid}
-        
-#         if not include_deleted:
-#             query_filter["is_deleted"] = False
-        
-#         if not include_deactivated:
-#             query_filter["is_active"] = True
-
-#         # Merge additional filters
-#         if filters:
-#             for field, value in filters.items():
-#                 if value is None:
-#                     continue
-#                 query_filter[field] = (
-#                     {"$regex": f"^{value}$", "$options": "i"} 
-#                     if isinstance(value, str) 
-#                     else value
-#                 )
-
-#         # Search criteria
-#         if search:
-#             for field, term in search.items():
-#                 if term is None:
-#                     continue
-#                 query_filter[field] = (
-#                     {"$regex": f"^{term}$", "$options": "i"} 
-#                     if exact_match 
-#                     else {"$regex": term, "$options": "i"}
-#                 )
-#         # Sorting
-#         sort_params = [
-#             (field, order.value) 
-#             for field, order in (sort or [("_id", SortOrder.ASC)])
-#         ]
-
-#         return await self.model.find(
-#             query_filter
-#         ).sort(sort_params).skip(skip).limit(limit).to_list()
-
-#     async def update(
-#         self,
-#         doc_id: Union[PydanticObjectId, str],
-#         company_id: Union[PydanticObjectId, str],
-#         payload: BaseModel,
-#         unique_fields: Optional[List[str]] = None,
-#         session=None
-#     ) -> ModelType:
-#         """
-#         Tenant-isolated update with uniqueness checks.
-#         """
-#         obj = await self.get_by_id(doc_id, company_id, session=session)
-
-#         if isinstance(payload, BaseModel):
-#             data = payload.model_dump(exclude_unset=True)
-#         elif isinstance(payload, Mapping):
-#             data = dict(payload)  # in case it's not a native dict
-#         else:
-#             raise ValidationError("Payload must be a Pydantic model or a dictionary")
-
-#         checks = [f for f in (unique_fields or []) if f in data]
-
-#         # Duplicate check scoped to company
-#         dup_filters = []
-#         for field in checks:
-#             val = data[field]
-#             if not isinstance(val, str) or not val.strip():
-#                 raise ValidationError(f"'{field}' must not be empty")
-#             dup_filters.append({
-#                 field: val.strip(),
-#                 "company_id": obj.company_id,
-#                 "_id": {"$ne": obj.id}
-#             })
-
-#         if dup_filters:
-#             existing = await self.model.find_one({"$or": dup_filters}, session=session)
-#             if existing:
-#                 raise AlreadyExistsError(
-#                     f"{self.model.__name__} with these values already exists"
-#                 )
-
-#         for field, val in data.items():
-#             setattr(obj, field, val)
-#         await obj.replace(session=session)
-#         return obj
-
-#     async def update_flags(
-#         self,
-#         doc_id: Union[PydanticObjectId, str],
-#         company_id: Union[PydanticObjectId, str],
-#         fields: List[Tuple[str, bool]] = None,
-#         session=None
-#     ) -> ModelType:
-#         """
-#         Tenant-isolated flag updates.
-#         """
-#         obj = await self.get_by_id(doc_id, company_id, include_deleted=True, session=session)
-
-#         if not fields:
-#             raise ValidationError("No fields provided")
-
-#         for field, value in fields:
-#             if not hasattr(obj, field):
-#                 raise ValidationError(f"Invalid field '{field}'")
-#             if not isinstance(value, bool):
-#                 raise ValidationError("Flag values must be boolean")
-#             setattr(obj, field, value)
-
-#         await obj.save(session=session)
-#         return obj
-
-#     async def delete(
-#         self,
-#         doc_id: Union[PydanticObjectId, str],
-#         company_id: Union[PydanticObjectId, str],
-#         hard_delete: bool = False,
-#         session=None
-#     ) -> None:
-#         """
-#         Tenant-isolated deletion.
-#         """
-#         obj = await self.get_by_id(doc_id, company_id, include_deleted=True)
-        
-#         if hard_delete:
-#             await obj.delete(session=session)
-#         else:
-#             obj.is_deleted = True
-#             await obj.save(session=session)

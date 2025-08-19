@@ -49,8 +49,10 @@ class Quote(Document, TimeStampMixin):
             IndexModel([("created_at", ASCENDING)], name="quote_md_created_at")
         ]
 
-    class Config:
-        schema_extra = {
+        
+    model_config = {
+        "from_attributes": True,
+        "json_schema_extra" : {
             "example": {
                 "user_id": "60d5f484a2b4b5a9c3d4e8f0",
                 "full_name": "Jane Doe",
@@ -69,3 +71,4 @@ class Quote(Document, TimeStampMixin):
                 "completed": False
             }
         }
+    }

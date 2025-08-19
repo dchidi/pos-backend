@@ -37,6 +37,8 @@ class TenantTier(str, Enum):
     BASIC = "basic"
     PRO = "pro"
     ENTERPRISE = "enterprise"
+    EXTRA_USER = "extra_user"
+    EXTRA_STORE = "extra_store"
 
 class StockStatus(str, Enum):
     ACTIVE = "active"
@@ -48,3 +50,10 @@ class AuditAction(str, Enum):
     CREATE = "CREATE"
     UPDATE = "UPDATE"
     DELETE = "DELETE"
+
+class LogLevel(str):
+    INFO = "INFO"
+    WARNING = "WARNING"
+    ERROR = "ERROR"
+    SECURITY = "SECURITY"
+    PERMANENT_DELETE = "PERMANENT_DELETE"

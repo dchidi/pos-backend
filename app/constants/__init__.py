@@ -1,6 +1,6 @@
 from app.constants.status_enum import (
   RoleStatus, PaymentStatus, TenantStatus, TenantTier,
-  TransferStatus, StockStatus, AuditAction
+  TransferStatus, StockStatus, AuditAction, LogLevel
 )
 from app.constants.permissions import (
   PERMISSION_GROUPS

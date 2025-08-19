@@ -37,7 +37,7 @@ class Tenant(Document, TimeStampMixin):
     email: Optional[EmailStr] = None
 
     # Tenant configuration
-    tier: TenantTier = Field(default=TenantTier.BASIC)
+    tier: TenantTier = Field(default=TenantTier.FREE)
     status: TenantStatus = Field(default=TenantStatus.ACTIVE)
     settings: TenantSettingsSchema = Field(default_factory=TenantSettingsSchema)
     plan_id: PydanticObjectId = Field(..., description="Reference to the tenant's current plan")

@@ -18,6 +18,9 @@ from app.services.user_setup.tenant import (
     activate_tenant
 )
 
+
+from app.services.auth import require_roles_or_permissions
+
 from app.services.auth import get_current_company
 
 
@@ -31,9 +34,10 @@ router = APIRouter()
     summary="Create a new tenant",
 )
 async def create_tenant_route(
-    payload: TenantCreate
+    payload: TenantCreate,    
+    # current_user_id = Depends(require_roles_or_permissions("app_manager", "tenant:create"))
 ):
-    return await create_tenant(payload)
+    return await create_tenant(data=payload)
 
 
 # GET /tenants/?skip=0&limit=20&include_deleted=false&name=East%20Tenant

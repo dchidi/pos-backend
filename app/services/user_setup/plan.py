@@ -1,4 +1,5 @@
 from typing import List, Optional, Tuple, Any, Dict
+from fastapi import Request
 
 from app.models.user_setup.plan import Plan
 
@@ -58,44 +59,54 @@ async def list_plans(
 
 async def update_plan(
     plan_id: str,
-    data: PlanUpdate
+    data: PlanUpdate,
+    user_id: str
 ) -> Plan:
     res = await crud.update(
         doc_id=plan_id,
         payload=data, 
         unique_fields=["name"],
-        use_company_id=False
+        use_company_id=False,
+        user_id=user_id
     )
     return res
 
 async def soft_delete_plan(
-    plan_id: str,
+    plan_id: str,    
+    user_id: str
 ) -> None:
     """Soft-delete a plan."""
     res = await crud.update_flags(
-        doc_id=plan_id, 
+        doc_id=plan_id,
+        user_id=user_id,
         fields=[("is_deleted", True), ("is_active", False)],
         use_company_id= False
     )
     return res
 
 async def delete_plan(
-    plan_id: str,
+    plan_id: str,    
+    user_id: str,
+    request: Request
 ) -> None:
     """hard-delete a plan."""
     res = await crud.delete(
-        doc_id=plan_id, 
+        doc_id=plan_id,
+        user_id=user_id,
         hard_delete= True,
-        use_company_id=False
+        use_company_id=False,
+        request=request
     )
     return res
 
 async def restore_plan(
     plan_id: str,
+    user_id: str
 ) -> Plan:
     """Restore a previously soft-deleted plan."""
     res = await crud.update_flags(
-        doc_id=plan_id, 
+        doc_id=plan_id,
+        user_id=user_id,
         fields=[("is_deleted", False), ("is_active", True)],
         use_company_id=False
     )
@@ -104,10 +115,12 @@ async def restore_plan(
 
 async def disable_plan(
     plan_id: str,
+    user_id: str
 ) -> None:
     """Deactivate a plan."""
     res = await crud.update_flags(
-        doc_id=plan_id, 
+        doc_id=plan_id,
+        user_id=user_id,
         fields=[("is_active", False)],
         use_company_id=False
     )
@@ -116,10 +129,12 @@ async def disable_plan(
 
 async def activate_plan(
     plan_id: str,
+    user_id: str
 ) -> Plan:
     """Restore a previously deactivated plan."""
     res = await crud.update_flags(
-        doc_id=plan_id, 
+        doc_id=plan_id,
+        user_id=user_id,
         fields=[("is_active", True)],
         use_company_id=False
     )

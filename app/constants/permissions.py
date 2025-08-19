@@ -1,4 +1,19 @@
 # This list must be manually populated when endpoints are created.
+APP_PERMISSIONS = [
+      {
+        "group": "plan",
+        "name": "Subscription Plan",
+        "description": "User subscription plan",
+        "permissions": [
+            { "value": "plan:create", "label": "Create Plan", "description": "Add new plan" },
+            { "value": "plan:edit", "label": "Edit Plan", "description": "Modify plan details" },
+            { "value": "plan:delete:soft", "label": "Delete Plan", "description": "Temporarily remove user accounts" },
+            { "value": "plan:delete:hard", "label": "Permanently Delete Plan", "description": "Irreversibly remove plan" },
+            
+        ]
+    },
+]
+
 PERMISSION_GROUPS = [
     {
         "group": "super_admin",
