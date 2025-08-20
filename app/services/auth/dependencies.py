@@ -1,20 +1,21 @@
 from beanie import PydanticObjectId
-from fastapi import Depends
+from fastapi import Depends, Request
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError
+import hashlib
+import hmac
 
 from app.models.user_setup.user import User
 from app.models.blacklisted_token import BlacklistedToken 
 from app.models.user_setup.tenant import Tenant
-from app.models.logs import Log
-
 
 from app.services.exceptions import  ValidationError, UnAuthorized, NotFoundError
 from app.services.auth.token import decode_token
-from fastapi import Request
 
 from app.constants import LogLevel
+
 from app.core.audit_log import audit_log_bg
+from app.core.settings import settings
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
@@ -85,6 +86,19 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> User:
 async def get_current_token(token: str = Depends(oauth2_scheme)) -> str:
     return token
 
+def paystack_webhook_secret() -> bytes:
+    if settings.WEBHOOK_SECRET_SAME_AS_PAYSTACK_SECRET:
+        return settings.PAYSTACK_SECRET_KEY.encode()
+    return (settings.WEBHOOK_SECRET or "").encode()
+
+def verify_paystack_signature(raw_body: bytes, signature: str | None) -> bool:
+    if not signature:
+        return False
+    computed = hmac.new(paystack_webhook_secret(), raw_body, hashlib.sha512).hexdigest()
+    try:
+        return hmac.compare_digest(computed, signature)
+    except Exception:
+        return False
 
 def require_permission(permission: str):
     async def dependency(current_user: User = Depends(get_current_user)):

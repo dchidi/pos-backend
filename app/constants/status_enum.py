@@ -37,8 +37,8 @@ class TenantTier(str, Enum):
     BASIC = "basic"
     PRO = "pro"
     ENTERPRISE = "enterprise"
-    EXTRA_USER = "extra_user"
-    EXTRA_STORE = "extra_store"
+    USER_ADDONS = "user_add_ons" # Extra user
+    STORE_ADDONS = "store_add_ons" # Extra store
 
 class StockStatus(str, Enum):
     ACTIVE = "active"

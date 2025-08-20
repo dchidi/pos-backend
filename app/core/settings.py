@@ -6,6 +6,7 @@ class Settings(BaseSettings):
     
     APP_NAME: str = "ScanPay"
     PROJECT_NAME: str = "ScanPay API"
+    APP_BASE_URL: str = "http://127.0.0.1:8000/api/v1" # Update this on .env file to point to the server
 
     MONGO_URI: str = "mongodb://localhost:27017"
     MONGO_DB_NAME: str = "scanpay_db"
@@ -33,6 +34,22 @@ class Settings(BaseSettings):
 
     CORS_ORIGINS: List[AnyHttpUrl] = ["http://localhost:3000"]  # or ["*"] for all
     ACTIVATION_LINK: str = "http://127.0.0.1:8000/api/v1/auth/verify_account?verification_token="
+
+    
+
+    # Paystack
+    PAYSTACK_SECRET_KEY: str
+    PAYSTACK_PUBLIC_KEY: Optional[str] = None
+    PAYSTACK_BASE_URL: AnyHttpUrl = "https://api.paystack.co" # type: ignore
+
+
+    # Webhook
+    WEBHOOK_SECRET_SAME_AS_PAYSTACK_SECRET: bool = True
+    WEBHOOK_SECRET: Optional[str] = None
+
+
+    # HTTP
+    HTTP_TIMEOUT_SECONDS: float = 15.0
 
     class Config:
         env_file = ".env"

@@ -27,7 +27,7 @@ class Log(Document):
             # TTL index on timestamp with custom name
             IndexModel(
                 [("timestamp", ASCENDING)],
-                expireAfterSeconds=60*60*24*1,  # 1 day
+                expireAfterSeconds=60*60*24*90,  # 90 days
                 name="log_model_timestamp_idx"
             ),
             # Index on level for fast filtering
