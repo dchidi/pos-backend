@@ -2,6 +2,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from beanie import init_beanie
 import logging
 import traceback
+import certifi
 
 from app.core.settings import settings
 
