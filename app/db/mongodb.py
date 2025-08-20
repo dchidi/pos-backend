@@ -21,7 +21,13 @@ class MongoDB:
             self.client = AsyncIOMotorClient(
                 settings.MONGO_URI,
                 tz_aware=True,
-                serverSelectionTimeoutMS=5000
+                serverSelectionTimeoutMS=5000,
+
+                tls=True,                        # explicit
+                tlsAllowInvalidCertificates=False,
+                # Motor/PyMongo will use the ssl context via CA file; passing tlsCAFile is enough,
+                # but the context above ensures TLS1.2+.
+                tlsCAFile=certifi.where(),
             )
             
             # Test the connection
@@ -52,7 +58,6 @@ class MongoDB:
                 allow_index_dropping=True  # ← drop & rebuild any conflicting indexes
             )
             
-
             logger.info("Beanie initialised successfully")
         except Exception as e:
             logger.exception("Beanie initialisation failed")
