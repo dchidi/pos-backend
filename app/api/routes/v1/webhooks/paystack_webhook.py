@@ -10,6 +10,10 @@ from app.services.payment.payment import PaymentService
 from app.services.payment.subscription import SubscriptionService
 from app.core.settings import settings
 
+import logging
+logger = logging.getLogger(__name__)
+
+
 router = APIRouter()
 
 def get_payment_service() -> PaymentService: return PaymentService()
@@ -30,19 +34,45 @@ async def paystack_webhook(
     psvc: PaymentService = Depends(get_payment_service),
     ssvc: SubscriptionService = Depends(get_subscription_service),
 ):
+    # Log the incoming request
+    logger.info(f"Webhook received from IP: {request.client.host}")
+    logger.info(f"All headers: {dict(request.headers)}")
+    logger.info(f"X-Paystack-Signature present: {bool(x_paystack_signature)}")
+    
+    if not x_paystack_signature:
+        logger.warning("Missing X-Paystack-Signature header")
+        raise HTTPException(status_code=401, detail="Missing signature")
+    
     # 1) Read raw body exactly as received
     raw = await request.body()
+    body_str = raw.decode('utf-8')
+    logger.info(f"Raw body length: {len(body_str)} characters")
 
     # 2) Compute HMAC-SHA512 with your Paystack SECRET (sk_test_* or sk_live_*)
+    # secret = settings.PAYSTACK_SECRET_KEY
+    # if not secret:
+    #     raise HTTPException(status_code=500, detail="PAYSTACK_SECRET_KEY not configured")
+    # computed = hmac.new(secret.encode("utf-8"), raw, hashlib.sha512).hexdigest()
     secret = settings.PAYSTACK_SECRET_KEY
     if not secret:
-        raise HTTPException(status_code=500, detail="PAYSTACK_SECRET_KEY not configured")
+        logger.error("PAYSTACK_SECRET_KEY not configured")
+        raise HTTPException(status_code=500, detail="Server configuration error")
+    
     computed = hmac.new(secret.encode("utf-8"), raw, hashlib.sha512).hexdigest()
+    logger.info(f"Computed signature: {computed}")
+    logger.info(f"Received signature: {x_paystack_signature}")
 
     # 3) Compare with header
-    if not x_paystack_signature or not hmac.compare_digest(computed, x_paystack_signature):
-        # Return 401 so Paystack will retry
+    # if not x_paystack_signature or not hmac.compare_digest(computed, x_paystack_signature):
+    #     # Return 401 so Paystack will retry
+    #     raise HTTPException(status_code=401, detail="Invalid webhook signature")
+    if not hmac.compare_digest(computed, x_paystack_signature):
+        logger.warning("Signature validation failed")
+        logger.warning(f"Expected: {computed}")
+        logger.warning(f"Received: {x_paystack_signature}")
         raise HTTPException(status_code=401, detail="Invalid webhook signature")
+    
+    logger.info("Signature validation successful")
 
     # 4) Safe to parse JSON now
     payload = json.loads(raw.decode("utf-8"))
