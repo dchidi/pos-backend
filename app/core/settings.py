@@ -32,7 +32,7 @@ class Settings(BaseSettings):
 
     REDIRECT_TO_UPDATE_PASSWORD: str = "http://localhost:5173/update_password"
 
-    CORS_ORIGINS: List[AnyHttpUrl] = ["*"]  # or ["*"] for all
+    # CORS_ORIGINS: List[AnyHttpUrl] = ["*"]  # or ["*"] for all
     ACTIVATION_LINK: str = "http://127.0.0.1:8000/api/v1/auth/verify_account?verification_token="
 
     
