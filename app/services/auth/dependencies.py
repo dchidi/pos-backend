@@ -3,7 +3,7 @@ from fastapi import Depends, Request
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError
 import hashlib
-import hmac
+import hmac, logging
 
 from app.models.user_setup.user import User
 from app.models.blacklisted_token import BlacklistedToken 
@@ -20,6 +20,8 @@ from app.core.settings import settings
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
 
+
+xlog = logging.getLogger("paystack")
 
 async def get_current_company(token: str = Depends(oauth2_scheme)) -> PydanticObjectId:
     try:
@@ -95,8 +97,7 @@ def verify_paystack_signature(raw_body: bytes, signature: str | None) -> bool:
     if not signature:
         return False
     computed = hmac.new(paystack_webhook_secret(), raw_body, hashlib.sha512).hexdigest()
-    print("Paystack sig:", signature)
-    print("Computed sig:", computed)
+    xlog.info("Sig hdr=%s…, computed=%s…", signature[:16], computed[:16])
     try:
         return hmac.compare_digest(computed, signature)
     except Exception:
