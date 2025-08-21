@@ -1,5 +1,5 @@
-from typing import List, Optional
-from pydantic import AnyHttpUrl
+from typing import Optional
+from pydantic import AnyHttpUrl, field_validator
 from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
@@ -50,6 +50,15 @@ class Settings(BaseSettings):
 
     # HTTP
     HTTP_TIMEOUT_SECONDS: float = 15.0
+
+    @field_validator("PAYSTACK_SECRET_KEY", mode="before")
+    @classmethod
+    def _strip_and_require(cls, v):
+        if isinstance(v, str):
+            v = v.strip()
+        if not v:
+            raise ValueError("PAYSTACK_SECRET_KEY is required")
+        return v
 
     class Config:
         env_file = ".env"
