@@ -106,7 +106,7 @@ async def paystack_webhook(
             )
 
         if mtype == "pos_payment" and reference:
-            await psvc.verify(reference, gateway_paid_at=gateway_paid_at)
+            await psvc.verify(reference)
 
         elif mtype == "subscription_first_charge":
             auth = data.get("authorization") or {}
