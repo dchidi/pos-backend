@@ -8,7 +8,10 @@ from fastapi import HTTPException
 
 
 from app.constants import Currency, to_minor_units
+
 from app.models.payment.payment import Payment
+from app.models.payment.webhook_event import WebhookEvent
+
 from app.gateways.paystack_cleint import PaystackClient
 
 
@@ -82,3 +85,39 @@ class PaymentService:
 
   async def get_by_reference(self, reference: str) -> Optional[Payment]:
     return await Payment.find_one(Payment.reference == reference)
+  
+  async def mark_webhook_observed(
+        self,
+        reference: str,
+        gateway_paid_at: Optional[datetime],
+        webhook_received_at: datetime,
+        raw: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """
+        Record that a Paystack webhook was observed (immutable audit).
+        Idempotent: inserts once per event_key; duplicates are ignored.
+        """
+        # Prefer Paystack's numeric/string id when available, else reference
+        tx_id = None
+        event = None
+        if raw:
+            event = raw.get("event") or None
+            data = raw.get("data") or {}
+            tx_id = data.get("id") or data.get("reference") or None
+            # If caller didn't pass gateway_paid_at, derive from payload
+            gateway_paid_at = gateway_paid_at
+
+        event_key = str(tx_id or reference or "unknown")
+
+        try:
+            await WebhookEvent(
+                event_key=event_key,
+                event=event,
+                reference=reference,
+                gateway_paid_at=gateway_paid_at,
+                received_at=webhook_received_at,
+                payload=raw,
+            ).insert()
+        except Exception:
+            # Likely duplicate key (retry from Paystack) – treat as no-op.
+            return

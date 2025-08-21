@@ -113,13 +113,13 @@ async def paystack_webhook(
             authorization_code = auth.get("authorization_code")
             customer = data.get("customer") or {}
             email = customer.get("email") or metadata.get("customer_email")
-            plan_code = metadata.get("plan_code")
+            plan_id = metadata.get("plan_id")
             tenant_id_str = metadata.get("tenant_id")
-            if authorization_code and email and plan_code and tenant_id_str:
+            if authorization_code and email and plan_id and tenant_id_str:
                 await ssvc.activate_from_webhook(
                     tenant_id=tenant_id_str,
                     email=email,
-                    plan_code=plan_code,
+                    plan_id=plan_id,
                     authorization_code=authorization_code,
                     activated_at=gateway_paid_at or webhook_received_at,
                 )
