@@ -95,6 +95,8 @@ def verify_paystack_signature(raw_body: bytes, signature: str | None) -> bool:
     if not signature:
         return False
     computed = hmac.new(paystack_webhook_secret(), raw_body, hashlib.sha512).hexdigest()
+    print("Paystack sig:", signature)
+    print("Computed sig:", computed)
     try:
         return hmac.compare_digest(computed, signature)
     except Exception:
