@@ -30,15 +30,16 @@ def _parse_iso8601(dt: Optional[str]) -> Optional[datetime]:
 @router.post("/paystack")
 async def paystack_webhook(
     request: Request,
-    x_paystack_signature: Optional[str] = Header(None, convert_underscores=False),
     psvc: PaymentService = Depends(get_payment_service),
     ssvc: SubscriptionService = Depends(get_subscription_service),
 ):
-    # Log the incoming request
-    logger.info(f"Webhook received from IP: {request.client.host}")
-    logger.info(f"All headers: {dict(request.headers)}")
-    logger.info(f"X-Paystack-Signature present: {bool(x_paystack_signature)}")
+    # Manually extract the signature header (case-insensitive)
+    headers = dict(request.headers)
+    x_paystack_signature = headers.get('x-paystack-signature') or headers.get('X-Paystack-Signature')
     
+    logger.info(f"All headers keys: {list(headers.keys())}")
+    logger.info(f"Extracted signature: {x_paystack_signature}")
+
     if not x_paystack_signature:
         logger.warning("Missing X-Paystack-Signature header")
         raise HTTPException(status_code=401, detail="Missing signature")
