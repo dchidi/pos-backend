@@ -88,20 +88,20 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> User:
 async def get_current_token(token: str = Depends(oauth2_scheme)) -> str:
     return token
 
-def paystack_webhook_secret() -> bytes:
-    if settings.WEBHOOK_SECRET_SAME_AS_PAYSTACK_SECRET:
-        return settings.PAYSTACK_SECRET_KEY.encode()
-    return (settings.WEBHOOK_SECRET or "").encode()
+# def paystack_webhook_secret() -> bytes:
+#     if settings.WEBHOOK_SECRET_SAME_AS_PAYSTACK_SECRET:
+#         return settings.PAYSTACK_SECRET_KEY.encode()
+#     return (settings.WEBHOOK_SECRET or "").encode()
 
-def verify_paystack_signature(raw_body: bytes, signature: str | None) -> bool:
-    if not signature:
-        return False
-    computed = hmac.new(paystack_webhook_secret(), raw_body, hashlib.sha512).hexdigest()
-    xlog.info("Sig hdr=%s…, computed=%s…", signature[:16], computed[:16])
-    try:
-        return hmac.compare_digest(computed, signature)
-    except Exception:
-        return False
+# def verify_paystack_signature(raw_body: bytes, signature: str | None) -> bool:
+#     if not signature:
+#         return False
+#     computed = hmac.new(paystack_webhook_secret(), raw_body, hashlib.sha512).hexdigest()
+#     xlog.info("Sig hdr=%s…, computed=%s…", signature[:16], computed[:16])
+#     try:
+#         return hmac.compare_digest(computed, signature)
+#     except Exception:
+#         return False
 
 def require_permission(permission: str):
     async def dependency(current_user: User = Depends(get_current_user)):

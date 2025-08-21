@@ -80,7 +80,7 @@ class PaystackClient(PaymentGateway):
             "amount": amount_minor,
             "reference": reference,
             "currency": currency.value,
-            "channels": ["card"],  # e.g. ["card","bank_transfer","ussd","qr"]
+            "channels": ["card", "qr"],  # e.g. ["card","bank_transfer","ussd","qr"]
         }
         if callback_url:
             payload["callback_url"] = callback_url

@@ -8,8 +8,6 @@ from app.constants import Currency
 from app.services.payment.payment import PaymentService
 from app.utils.qr_code import generate_qr_png_bytes
 
-from app.core.settings import settings
-
 
 router = APIRouter()
 

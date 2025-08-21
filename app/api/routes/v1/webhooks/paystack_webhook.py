@@ -3,7 +3,7 @@ import json, hashlib, hmac
 from datetime import datetime, timezone
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 
 from app.models.payment.webhook_event import WebhookEvent
 from app.services.payment.payment import PaymentService
