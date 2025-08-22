@@ -5,6 +5,7 @@ from fastapi import Request
 from pydantic import BaseModel
 from beanie import Document, PydanticObjectId
 from collections.abc import Mapping
+from datetime import datetime, timezone
 
 from app.services.exceptions import (
     NotFoundError, AlreadyExistsError, ValidationError
@@ -16,6 +17,7 @@ from app.models.logs import Log
 ModelType = TypeVar("ModelType", bound=Document)
 
 PROTECTED_FIELDS = {"_id", "id", "company_id", "created_by", "created_at"}
+
 
 class CRUD(Generic[ModelType]):
     def __init__(self, model: Type[ModelType]):
@@ -69,7 +71,7 @@ class CRUD(Generic[ModelType]):
             data = dict(payload)  # in case it's not a native dict
         else:
             raise ValidationError("Payload must be a Pydantic model or a dictionary")
-        
+
         checks = unique_fields or []
 
         # 1) Validate non-empty for each unique field
@@ -121,7 +123,7 @@ class CRUD(Generic[ModelType]):
         obj = await self.model.find_one(query, session=session)
         if not obj:
             raise NotFoundError("Document not found or inaccessible")
-            
+
         return obj
 
     async def list(
@@ -250,7 +252,7 @@ class CRUD(Generic[ModelType]):
             session=session, use_company_id=use_company_id,
             include_deleted=True, include_deactivated=True
         )
-    
+
     async def update_flags(
         self,
         doc_id: Union[PydanticObjectId, str],
@@ -283,7 +285,7 @@ class CRUD(Generic[ModelType]):
             if not isinstance(value, bool):
                 raise ValidationError("Flag values must be boolean")
             setattr(obj, field, value)
-        
+
         setattr(obj, "updated_by", user_oid)
 
         await obj.save(session=session)
@@ -298,7 +300,7 @@ class CRUD(Generic[ModelType]):
         session=None,
         use_company_id: bool = True,  # Flag to conditionally apply company_id
         request: Request = None
-    ) -> None:        
+    ) -> None:
         # To ensure update always works if the document exist irrepective of delete and active status
         # set include_deleted=True and include_deactivated=True
         obj = await self.get_by_id(
@@ -308,31 +310,33 @@ class CRUD(Generic[ModelType]):
         )
 
         if hard_delete:
-            
+
             endpoint = str(request.url) if request and hasattr(request, "url") else None
             method = str(request.method) if request and hasattr(request, "method") else None
             headers = {k: str(v)[:100] for k, v in request.headers.items()} if request and hasattr(request, "headers") else {}
             query_params = {k: str(v)[:200] for k, v in request.query_params.items()} if request and hasattr(request, "query_params") else {}
             client_host = request.client.host if request and hasattr(request, "client") and hasattr(request.client, "host") else None
-            
+
             deleted_data = obj.model_dump()  # snapshot of the document
-            
+
             await Log(
                 user_id=str(user_id) if user_id else None,
                 endpoint=endpoint,
                 action=method,
                 level=LogLevel.PERMANENT_DELETE,
                 details={
-                    "deleted_doc": deleted_data, 
+                    "deleted_doc": deleted_data,
                     "error_msg": "",
                     "headers": headers,
                     "query_params": query_params,
                     "client_host": client_host
                 }
             ).insert()
-            
+
             await obj.delete(session=session)
         else:
             obj.is_deleted = True
             obj.updated_by = user_id
+            obj.deleted_by = user_id
+            obj.deleted_at = datetime.now(timezone.utc)
             await obj.save(session=session)

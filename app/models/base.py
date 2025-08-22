@@ -20,7 +20,11 @@ class TimeStampMixin(BaseModel):
         default_factory=lambda: datetime.now(timezone.utc),
         description="UTC timestamp when last updated"
     )
-
+    
+    deleted_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        description="UTC timestamp when record was deleted"
+    )
     # Status flags
     is_active: bool = Field(
         default=True,
@@ -40,7 +44,11 @@ class TimeStampMixin(BaseModel):
         default=None,
         description="User ID who last updated the record"
     )
-
+    
+    deleted_by: Optional[PydanticObjectId] = Field(
+        default=None,
+        description="User ID who deleted the record"
+    )
     # Simplified timestamp handlers
     @before_event([Insert])
     async def _set_initial_timestamps(self):

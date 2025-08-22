@@ -1,3 +1,4 @@
+from email.policy import default
 from beanie import Document
 from pydantic import BaseModel, Field, field_validator, model_validator
 from typing import List, Optional
@@ -18,6 +19,11 @@ class PaymentMethod(str, Enum):
     CARD = "card"
     TRANSFER = "transfer"
     MOMO = "mobile_money"
+
+class SalesType(str, Enum):
+    pos = "POS"
+    online = "online"
+    other = "Not Specified"
 
 class SaleItem(BaseModel):
     product_id: str = Field(..., min_length=1, max_length=50)
@@ -72,6 +78,7 @@ class Sale(Document):
 
     payment_method: PaymentMethod
     payment_reference: Optional[str] = Field(None, min_length=1, max_length=50)
+    sales_type: SalesType = Field(default=SalesType.other, description="Where sales came from")
 
     is_voided: bool = Field(default=False)
     voided_by: Optional[str] = Field(None, min_length=1, max_length=50)
